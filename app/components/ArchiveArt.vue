@@ -4,8 +4,8 @@
     <svg viewBox="0 0 520 400" fill="none">
       <defs>
         <linearGradient id="orbit-gradient" x1="100" y1="80" x2="400" y2="330" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#d7e4c0" stop-opacity=".85" />
-          <stop offset="1" stop-color="#92bda3" stop-opacity=".12" />
+          <stop class="art-line" stop-opacity=".85" />
+          <stop class="art-fade" offset="1" stop-opacity=".12" />
         </linearGradient>
       </defs>
       <g stroke="url(#orbit-gradient)">
@@ -17,15 +17,15 @@
         <path d="M80 195h380M270 12v366" stroke-dasharray="4 7" opacity=".4" />
         <circle cx="270" cy="195" r="92" opacity=".35" />
       </g>
-      <g fill="#e9edd0">
+      <g class="art-points">
         <circle cx="154" cy="120" r="4" /><circle cx="396" cy="250" r="3" /><circle cx="270" cy="195" r="5" />
         <circle cx="219" cy="322" r="3" />
       </g>
-      <g stroke="#d7e4c0" stroke-opacity=".5">
+      <g class="art-marks" stroke-opacity=".5">
         <path d="M146 112h16m-8-8v16M388 250h16m-8-8v16" />
       </g>
-      <text x="64" y="365" fill="#bed0b7" font-size="10" letter-spacing="3">ORDER · MEMORY · EVERYDAY LIFE</text>
-      <text x="455" y="56" fill="#bed0b7" font-size="10" text-anchor="end" letter-spacing="2">ARCHIVE / 001</text>
+      <text class="art-caption" x="64" y="365" font-size="10" letter-spacing="3">ORDER · MEMORY · EVERYDAY LIFE</text>
+      <text class="art-caption" x="455" y="56" font-size="10" text-anchor="end" letter-spacing="2">ARCHIVE / 001</text>
     </svg>
   </div>
 </template>

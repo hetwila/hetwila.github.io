@@ -1,0 +1,61 @@
+/* Layer 1: authored color values live here. All shades must be emitted:
+   Nuxt UI resolves the palettes through CSS variables at runtime. */
+@theme static {
+  --hue-brand: 158;
+  --hue-canvas: 95;
+  --hue-accent: 78;
+
+  --color-brand-50: oklch(0.975 0.012 var(--hue-brand));
+  --color-brand-100: oklch(0.94 0.025 var(--hue-brand));
+  --color-brand-200: oklch(0.87 0.055 var(--hue-brand));
+  --color-brand-300: oklch(0.78 0.085 var(--hue-brand));
+  --color-brand-400: oklch(0.68 0.105 var(--hue-brand));
+  --color-brand-500: oklch(0.56 0.11 var(--hue-brand));
+  --color-brand-600: oklch(0.47 0.095 var(--hue-brand));
+  --color-brand-700: oklch(0.39 0.077 var(--hue-brand));
+  --color-brand-800: oklch(0.32 0.058 var(--hue-brand));
+  --color-brand-900: oklch(0.255 0.043 var(--hue-brand));
+  --color-brand-950: oklch(0.18 0.025 var(--hue-brand));
+
+  --color-canvas-0: oklch(1 0 0);
+  --color-canvas-50: oklch(0.985 0.006 var(--hue-canvas));
+  --color-canvas-100: oklch(0.96 0.012 var(--hue-canvas));
+  --color-canvas-200: oklch(0.91 0.014 var(--hue-canvas));
+  --color-canvas-300: oklch(0.84 0.02 var(--hue-canvas));
+  --color-canvas-400: oklch(0.69 0.025 var(--hue-canvas));
+  --color-canvas-500: oklch(0.52 0.024 var(--hue-canvas));
+  --color-canvas-600: oklch(0.43 0.024 var(--hue-canvas));
+  --color-canvas-700: oklch(0.34 0.023 var(--hue-canvas));
+  --color-canvas-800: oklch(0.255 0.018 var(--hue-canvas));
+  --color-canvas-900: oklch(0.20 0.014 var(--hue-canvas));
+  --color-canvas-950: oklch(0.155 0.012 var(--hue-canvas));
+
+  --color-accent-50: oklch(0.98 0.018 var(--hue-accent));
+  --color-accent-100: oklch(0.95 0.04 var(--hue-accent));
+  --color-accent-200: oklch(0.90 0.07 var(--hue-accent));
+  --color-accent-300: oklch(0.84 0.10 var(--hue-accent));
+  --color-accent-400: oklch(0.75 0.12 var(--hue-accent));
+  --color-accent-500: oklch(0.65 0.12 var(--hue-accent));
+  --color-accent-600: oklch(0.54 0.105 var(--hue-accent));
+  --color-accent-700: oklch(0.44 0.085 var(--hue-accent));
+  --color-accent-800: oklch(0.35 0.06 var(--hue-accent));
+  --color-accent-900: oklch(0.27 0.04 var(--hue-accent));
+  --color-accent-950: oklch(0.19 0.025 var(--hue-accent));
+
+  --font-sans: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-serif: "Noto Serif CJK SC", "Songti SC", "STSong", "SimSun", serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --text-display: clamp(2.25rem, 4.8vw, 4.5rem);
+  --text-display--line-height: 1.3;
+  --text-article: 1rem;
+  --text-article--line-height: 2;
+}
+
+:root {
+  --ds-radius-base: 0.375rem;
+  --ds-duration-fast: 160ms;
+  --ds-duration-normal: 240ms;
+  --ds-page-width: 80rem;
+  --ds-reading-width: 44rem;
+  --ds-page-gutter: clamp(1.25rem, 4vw, 2.5rem);
+}

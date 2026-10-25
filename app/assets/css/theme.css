@@ -1,0 +1,96 @@
+/* Layer 2: semantic roles shared with Nuxt UI. Unlayered declarations
+   override Nuxt UI's generated @layer theme, without !important. */
+:root, .light {
+  color-scheme: light;
+  --ui-primary: var(--ui-color-primary-600);
+  --ui-secondary: var(--ui-color-secondary-700);
+  --ui-bg: var(--ui-color-neutral-50);
+  --ui-bg-muted: var(--ui-color-neutral-100);
+  --ui-bg-elevated: var(--ui-color-neutral-100);
+  --ui-bg-accented: var(--ui-color-neutral-200);
+  --ui-bg-inverted: var(--ui-color-neutral-900);
+  --ui-text: var(--ui-color-neutral-700);
+  --ui-text-highlighted: var(--ui-color-neutral-950);
+  --ui-text-toned: var(--ui-color-neutral-600);
+  --ui-text-muted: var(--ui-color-neutral-600);
+  --ui-text-dimmed: var(--ui-color-neutral-500);
+  --ui-text-inverted: var(--ui-color-neutral-50);
+  --ui-border: var(--ui-color-neutral-200);
+  --ui-border-muted: var(--ui-color-neutral-100);
+  --ui-border-accented: var(--ui-color-neutral-300);
+  --ui-border-inverted: var(--ui-color-neutral-900);
+  --ds-surface-raised: var(--color-canvas-0);
+  --ds-surface-tint: color-mix(in oklch, var(--ui-primary) 5%, var(--ui-bg));
+  --ds-shadow-color: color-mix(in oklch, var(--ui-color-neutral-950) 7%, transparent);
+  --ds-focus: var(--ui-primary);
+  --ds-selection-bg: var(--ui-color-primary-200);
+  --ds-selection-text: var(--ui-color-primary-950);
+}
+
+.dark {
+  color-scheme: dark;
+  --ui-primary: var(--ui-color-primary-300);
+  --ui-secondary: var(--ui-color-secondary-300);
+  --ui-bg: var(--ui-color-neutral-950);
+  --ui-bg-muted: var(--ui-color-neutral-900);
+  --ui-bg-elevated: var(--ui-color-neutral-900);
+  --ui-bg-accented: var(--ui-color-neutral-800);
+  --ui-bg-inverted: var(--ui-color-neutral-100);
+  --ui-text: var(--ui-color-neutral-200);
+  --ui-text-highlighted: var(--ui-color-neutral-50);
+  --ui-text-toned: var(--ui-color-neutral-300);
+  --ui-text-muted: var(--ui-color-neutral-400);
+  --ui-text-dimmed: var(--ui-color-neutral-400);
+  --ui-text-inverted: var(--ui-color-neutral-950);
+  --ui-border: var(--ui-color-neutral-800);
+  --ui-border-muted: var(--ui-color-neutral-900);
+  --ui-border-accented: var(--ui-color-neutral-700);
+  --ui-border-inverted: var(--ui-color-neutral-100);
+  --ds-surface-raised: var(--ui-color-neutral-900);
+  --ds-surface-tint: color-mix(in oklch, var(--ui-primary) 6%, var(--ui-bg));
+  --ds-shadow-color: color-mix(in oklch, var(--ui-color-neutral-950) 40%, transparent);
+  --ds-selection-bg: var(--ui-color-primary-700);
+  --ds-selection-text: var(--ui-color-primary-50);
+}
+
+/* Layer 3: component roles. Components never reach into a palette. */
+:root {
+  --ui-radius: var(--ds-radius-base);
+  --ui-container: var(--ds-page-width);
+  --ui-header-height: 4.75rem;
+  --ds-radius-card: calc(var(--ui-radius) * 3);
+  --ds-radius-hero: calc(var(--ui-radius) * 4);
+  --ds-shadow-card: 0 8px 28px -12px var(--ds-shadow-color);
+  --ds-header-bg: color-mix(in oklch, var(--ui-bg) 92%, transparent);
+  --ds-card-border-hover: color-mix(in oklch, var(--ui-primary) 45%, var(--ui-border));
+  --ds-hero-bg: var(--ui-color-primary-950);
+  --ds-hero-text: var(--ui-color-primary-50);
+  --ds-hero-muted: var(--ui-color-primary-200);
+  --ds-hero-accent: var(--ui-color-secondary-200);
+  --ds-hero-glow: color-mix(in oklch, var(--ui-color-primary-500) 28%, transparent);
+  --ds-hero-grid: color-mix(in oklch, var(--ds-hero-text) 6%, transparent);
+  --ds-hero-action-bg: var(--ds-hero-accent);
+  --ds-hero-action-hover: var(--ui-color-secondary-100);
+  --ds-hero-action-text: var(--ui-color-primary-950);
+  --ds-art-line: var(--ui-color-primary-200);
+  --ds-art-fade: var(--ui-color-primary-400);
+  --ds-art-point: var(--ds-hero-accent);
+  --ds-logo-bg: var(--ui-primary);
+  --ds-logo-ink: var(--ui-text-inverted);
+  --ds-quote-bg: var(--ds-surface-tint);
+  --ds-quote-border: var(--ui-primary);
+  --ds-link: var(--ui-primary);
+  --ds-link-underline: color-mix(in oklch, var(--ui-primary) 40%, transparent);
+  --ds-search-hover: var(--ds-surface-tint);
+}
+
+@theme inline {
+  --color-raised: var(--ds-surface-raised);
+  --color-tint: var(--ds-surface-tint);
+  --color-hero-action: var(--ds-hero-action-bg);
+  --color-hero-action-hover: var(--ds-hero-action-hover);
+  --color-hero-action-text: var(--ds-hero-action-text);
+  --radius-card: var(--ds-radius-card);
+  --radius-hero: var(--ds-radius-hero);
+  --shadow-card: var(--ds-shadow-card);
+}

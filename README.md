@@ -1,8 +1,30 @@
 # 赫特维拉世界观档案
 
-Nuxt 4 + Nuxt UI 4 + Nuxt Content 3 的第一个静态原型。设计背景见 [网站设计书](docs/网站设计书.md)。
+Nuxt 4 + Nuxt UI 4 + Nuxt Content 3 的静态档案网站，使用 Tailwind CSS 4 和分层设计系统。站点：<https://hetwila.github.io/>。
 
 目前包含首页、两个互相链接的百科试读条目（禁制与 H31-01）、Pagefind 中文搜索，以及供 AI 直接读取的 Markdown／JSON。故事、模拟论坛和 Supabase 尚未实施。
+
+已支持系统／浅色／深色主题、手机导航、页面目录与键盘搜索。开发约定见 [AGENTS.md](AGENTS.md)，主题与组件契约见 [设计系统](docs/design-system.md)，完整产品规划见 [网站设计书](docs/网站设计书.md)。三份文档分别记录工作约定、实现规范和后续目标。
+
+## 设计系统与官方技能
+
+配色遵循 **基础色板 → 语义主题 → 组件变量**：
+
+- `app/assets/css/primitives.css`：统一色相、OKLCH 色阶、字体和尺度。修改 `--hue-brand`、`--hue-canvas`、`--hue-accent` 即可调整全站的三组主色调。
+- `app/assets/css/theme.css`：浅／深色的 `--ui-*` 语义角色，以及横幅、插画、引用等组件变量。
+- `app/app.config.ts`：将色板接入 Nuxt UI，集中配置组件默认外观。页面使用 Tailwind 语义工具类，不写固定颜色。
+
+细节与修改示例集中在 [设计系统](docs/design-system.md)。默认跟随系统，主题选择由 Nuxt UI 的 Color Mode 管理并持久保存；主题状态不另写一套。
+
+官方 `nuxt-ui` skill 已通过 Skills CLI 安装到 [`.agents/skills/nuxt-ui/`](.agents/skills/nuxt-ui/SKILL.md)，来源为 [`nuxt/ui`](https://github.com/nuxt/ui/tree/v4/skills/nuxt-ui)。技能内容与 `skills-lock.json` 一起保留，正常克隆即可阅读。需要恢复时，在仓库根目录运行：
+
+```bash
+npx skills@1.7.4 experimental_install --agent codex --yes
+```
+
+首次安装的等价命令是 `npx skills@1.7.4 add nuxt/ui --skill nuxt-ui --agent codex --yes`。升级使用 `npx skills@1.7.4 update nuxt-ui --project --yes`，并审查技能与锁文件差异。锁文件记录来源、路径与内容哈希；已提交的技能文件保留本次实际使用的版本。
+
+[`.codex/config.toml`](.codex/config.toml) 配置了官方 Nuxt UI MCP。支持项目级配置的客户端加载后可调用它，需要网络允许 `ui.nuxt.com`；本次云会话仍受网络策略限制，组件 API 已按已安装版本的源码、类型和生成主题核对。云环境的 `npx` 如遇缓存权限问题，加上 `npm_config_cache=/workspace/.cache/hetwila/npm`。
 
 ## 开发环境
 
@@ -37,10 +59,12 @@ pnpm dev
 | `pnpm test:content` | 验证公开范围、引用、稳定身份与世界纪年 |
 | `pnpm generate` | 预渲染HTML、输出机器数据、构建Pagefind索引 |
 | `pnpm preview` | 在4173端口运行静态产物验证服务 |
-| `pnpm test:e2e` | 对已生成产物运行六项浏览器／HTTP测试，自动启停验证服务 |
+| `pnpm test:e2e` | 对生成产物运行阅读、搜索、主题、可访问性与HTTP测试，自动启停验证服务 |
 | `pnpm test` | 内容测试 → 生成 → 浏览器测试 |
 
 Playwright优先使用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`，或云环境已有的 `/usr/bin/chromium`。其他环境可运行 `pnpm exec playwright install chromium`。测试需要4173端口可用，不复用不明的现有服务。
+
+主题验收使用 `@axe-core/playwright` 检查两种模式下的首页、百科和搜索弹窗，并验证系统偏好、切换持久化、变量传递及手机导航。视觉变动还需检查桌面与手机截图；自动规则不等同于完整人工可访问性审计。
 
 项目选择TypeScript 5.9.3：当前Vue类型检查器不能加载TypeScript 7的编译入口。不要单独升级到7；待工具链兼容后一起升级并重新验证。
 
@@ -65,6 +89,6 @@ Markdown原文与JSON正文来自同一个源文件；`worldTime.year: 0` 保持
 
 推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、百科深层链接和机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
 
-Pages 来源应使用 **GitHub Actions**（**Settings → Pages → Build and deployment → Source**），避免默认 Jekyll 流程同时发布源代码目录。部署任务会尝试切换；若 GitHub 拒绝设置权限，会显示警告与具体原因，并继续向现有站点发布。此时需要仓库管理员在设置中切换来源。工作流通过 GitHub 自带的 `GITHUB_TOKEN` 与 OIDC 发布，不需要额外配置部署密钥。构建任务只读仓库，部署任务单独获得 Pages 写入权限；Actions 版本固定到提交 SHA。若在新仓库复用本工作流，需先在该仓库设置中启用 Pages。
+当前仓库的 Pages 来源已由管理员设置为 **GitHub Actions**（**Settings → Pages → Build and deployment → Source**）。工作流核对该设置，并通过 GitHub 自带的 `GITHUB_TOKEN` 与 OIDC 发布，不需要额外配置部署密钥。构建任务只读仓库，部署任务单独获得 Pages 写入权限；Actions 版本固定到提交 SHA。若在新仓库复用本工作流，需先启用 Pages 并选择 GitHub Actions 来源；自动切换被 GitHub 拒绝时会明确报告权限警告。
 
 发布目录只包含生成的HTML、Nuxt资源、Pagefind索引和机器数据；不需要运行Nuxt服务器。当前仓库为用户站点，部署基路径为 `/`。不要把源资料、草稿、缓存或`.env`作为发布产物。

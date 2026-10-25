@@ -9,12 +9,11 @@ export default defineNuxtConfig({
     head: {
       htmlAttrs: { lang: 'zh-CN' },
       titleTemplate: '%s · 赫特维拉',
-      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
-      meta: [{ name: 'theme-color', content: '#f5f5ef' }],
+      link: [{ key: 'favicon', rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     },
   },
   ui: { fonts: false },
-  colorMode: { preference: 'light' },
+  colorMode: { preference: 'system', fallback: 'light', classSuffix: '', storageKey: 'hetwila-color-mode' },
   icon: { clientBundle: { scan: true }, provider: 'none' },
   content: { build: { markdown: { highlight: false } } },
   nitro: {
