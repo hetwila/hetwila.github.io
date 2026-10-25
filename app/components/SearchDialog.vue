@@ -59,7 +59,7 @@ onBeforeUnmount(() => { clearTimeout(debounce); ++request })
 </script>
 
 <template>
-  <UModal v-model:open="open" title="搜索设定" description="检索已收录的试读条目，或通过历史编号定位事件。" :ui="{ content: 'sm:max-w-2xl', body: 'p-0 sm:p-0' }">
+  <UModal v-model:open="open" title="搜索设定" description="检索已收录的试读条目，或通过历史编号定位事件。" :ui="{ content: 'sm:max-w-search', body: 'p-0 sm:p-0' }">
     <template #body>
       <div class="search-field"><UInput ref="input" v-model="query" autofocus size="xl" icon="i-lucide-search" placeholder="试试「禁制」或「H31-01」" aria-label="搜索关键词" class="w-full" /></div>
       <div class="search-results" aria-live="polite">

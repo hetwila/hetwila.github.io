@@ -23,16 +23,16 @@ defineShortcuts({ meta_k: () => { searchOpen.value = !searchOpen.value } })
     <UNavigationMenu :items="items" variant="link" aria-label="主导航" />
 
     <template #right>
-      <UButton color="neutral" variant="ghost" icon="i-lucide-search" aria-label="搜索设定" class="min-h-10 min-w-10 justify-center" @click="searchOpen = true">
+      <UButton color="neutral" variant="ghost" icon="i-lucide-search" aria-label="搜索设定" class="min-h-control min-w-control justify-center" @click="searchOpen = true">
         <span class="hidden xl:inline">搜索设定</span>
         <template #trailing><UKbd value="meta" class="hidden xl:inline-flex" /><UKbd value="k" class="hidden xl:inline-flex" /></template>
       </UButton>
-      <UColorModeSelect aria-label="显示主题" color="neutral" variant="ghost" class="w-10 sm:w-28 min-h-10" :content="{ align: 'end' }" :ui="{ value: 'hidden sm:block', trailing: 'hidden sm:flex', content: 'min-w-36' }" />
+      <UColorModeSelect aria-label="显示主题" color="neutral" variant="ghost" class="w-control sm:w-28 min-h-control" :content="{ align: 'end' }" :ui="{ value: 'hidden sm:block', trailing: 'hidden sm:flex', content: 'min-w-36' }" />
     </template>
 
     <template #body>
       <UNavigationMenu :items="items" orientation="vertical" aria-label="移动导航" />
-      <p class="mt-8 border-t border-default pt-5 text-xs leading-6 text-muted">设定 3.0.3 · 试读档案<br>从一个概念，走进赫特维拉。</p>
+      <p class="mt-8 border-t border-default pt-5 text-caption leading-prose text-muted">设定 3.0.3 · 试读档案<br>从一个概念，走进赫特维拉。</p>
     </template>
   </UHeader>
   <SearchDialog v-model:open="searchOpen" />

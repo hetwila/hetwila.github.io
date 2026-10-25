@@ -13,9 +13,10 @@
 - 保留用户未提交的修改。安装使用锁文件，新增依赖固定版本。
 - 优先复用 Nuxt UI 的导航、表单、弹窗、卡片、主题控件及可访问性行为。自定义内容排版和品牌插画可以保留，通用交互不另写一套。
 - 页面使用 `text-default`、`text-muted`、`bg-raised`、`border-default`、`primary` 等语义角色。不得在组件中写颜色字面量、原始色板工具类或按页面覆盖深浅色。修改色板到 `primitives.css`，角色到 `theme.css`，组件默认外观到 `app.config.ts`。
+- 尺寸先复用 `primitives.css` 的字号／间距尺度；重复用途在 `tokens.css` 命名，再经 `tailwind-theme.css` 接入工具类。新增自定义名称同步登记 `app.config.ts` 的 `ui.tv` 合并规则。避免固定 `px`／`rem` 字号和留白散落在页面；数值 Tailwind 间距类共用 `--spacing`，可以使用。响应式 CSS 使用 `@variant`，与 Tailwind 断点保持一致。
 - 不修改已安装的官方 skill 来适配项目规则。保留 `.agents/skills/nuxt-ui/`、`skills-lock.json` 和项目级 MCP 配置；更新技能后审查文件及锁文件差异。
 - 使用 Nuxt UI 提供的 Color Mode，不另建主题状态或存储。保证系统偏好、明确选择、刷新与导航保持一致；组件文案使用 `zh_cn`。
-- 视觉改动同时检查桌面、手机、浅色、深色、键盘与无 JavaScript 阅读。主题改动验证颜色对比度及变量是否同时传递到 Nuxt UI、自定义 CSS 和 SVG。
+- 视觉改动同时检查桌面、手机、浅色、深色、键盘与无 JavaScript 阅读。主题改动验证颜色对比度、字号／间距传递，以及 Nuxt UI、自定义 CSS 和 SVG 的一致性。
 
 ## 内容与验证
 

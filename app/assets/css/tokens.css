@@ -1,0 +1,96 @@
+/* Layers 2–3: typography, rhythm and component dimensions.
+   Change a global scale in primitives.css, or one purpose here. */
+:root {
+  --ds-text-label: var(--text-2xs);
+  --ds-text-meta: calc(var(--ds-type-unit) * 0.6875);
+  --ds-text-caption: var(--text-xs);
+  --ds-text-detail: calc(var(--ds-type-unit) * 0.8125);
+  --ds-text-copy: calc(var(--ds-type-unit) * 0.9375);
+  --ds-text-body: var(--text-base);
+  --ds-text-prose: var(--ds-text-body);
+  --ds-text-card: var(--text-2xl);
+  --ds-text-section: clamp(var(--text-2xl), 2.5vw, var(--text-3xl));
+  --ds-text-title: clamp(calc(var(--ds-type-unit) * 2), 3.5vw, calc(var(--ds-type-unit) * 2.75));
+  --ds-text-display: clamp(var(--text-4xl), 4.8vw, var(--text-7xl));
+  --ds-leading-label: 1.6;
+  --ds-leading-heading: 1.4;
+  --ds-leading-display: 1.3;
+  --ds-leading-copy: 1.9;
+  --ds-leading-prose: var(--leading-loose);
+  --ds-tracking-label: 0.18em;
+  --ds-tracking-heading: 0.02em;
+  --ds-tracking-display: 0.04em;
+
+  --ds-page-gutter: clamp(calc(var(--spacing) * 5), 4vw, calc(var(--spacing) * 10));
+  --ds-space-inline: calc(var(--spacing) * 3);
+  --ds-space-stack: calc(var(--spacing) * 6);
+  --ds-space-panel: calc(var(--spacing) * 7);
+  --ds-space-section: calc(var(--spacing) * 16);
+  --ds-space-layout: calc(var(--spacing) * 10);
+  --ds-space-grid: calc(var(--spacing) * 5);
+  --ds-space-page-block: calc(var(--spacing) * 8);
+  --ds-control-size: calc(var(--spacing) * 10);
+  --ds-icon-size: calc(var(--spacing) * 5);
+
+  --ui-radius: var(--ds-radius-base);
+  --ui-container: var(--ds-page-width);
+  --ui-header-height: calc(var(--spacing) * 19);
+  --ds-radius-card: calc(var(--ui-radius) * 3);
+  --ds-radius-hero: calc(var(--ui-radius) * 4);
+  --ds-shadow-card: 0 calc(var(--spacing) * 2) calc(var(--spacing) * 7) calc(var(--spacing) * -3) var(--ds-shadow-color);
+  --ds-card-lift: calc(var(--spacing) * -0.5);
+  --ds-logo-size: calc(var(--spacing) * 10);
+  --ds-brand-title-size: var(--text-xl);
+  --ds-brand-subtitle-size: calc(var(--ds-type-unit) * 0.5625);
+  --ds-brand-tracking: 0.12em;
+  --ds-brand-subtitle-tracking: 0.16em;
+  --ds-hero-min-height: calc(var(--spacing) * 116);
+  --ds-hero-padding-x: calc(var(--spacing) * 14);
+  --ds-hero-padding-y: calc(var(--spacing) * 14);
+  --ds-hero-copy-width: 62%;
+  --ds-hero-description-size: var(--ds-text-copy);
+  --ds-hero-footnote-size: var(--ds-text-meta);
+  --ds-hero-label-tracking: 0.22em;
+  --ds-step-size: calc(var(--ds-type-unit) * 1.75);
+  --ds-nav-width: calc(var(--spacing) * 44);
+  --ds-toc-width: calc(var(--spacing) * 40);
+  --ds-table-cell-padding: calc(var(--spacing) * 3);
+  --ds-quote-padding-x: calc(var(--spacing) * 6);
+  --ds-quote-padding-y: calc(var(--spacing) * 4);
+  --ds-quote-border-width: calc(var(--ds-border-width) * 3);
+  --ds-search-max-height: 50dvh;
+
+  /* Use the same Tailwind breakpoints as Vue utility classes. */
+  @variant max-xl {
+    --ds-hero-min-height: calc(var(--spacing) * 104);
+    --ds-hero-padding-x: calc(var(--spacing) * 10);
+    --ds-hero-padding-y: calc(var(--spacing) * 12);
+    --ds-hero-copy-width: 65%;
+  }
+  @variant max-lg {
+    --ds-space-layout: calc(var(--spacing) * 8);
+    --ds-nav-width: calc(var(--spacing) * 40);
+  }
+  @variant max-md {
+    --ui-header-height: calc(var(--spacing) * 17);
+    --ds-logo-size: calc(var(--spacing) * 8);
+    --ds-brand-title-size: calc(var(--ds-type-unit) * 1.0625);
+    --ds-brand-subtitle-size: calc(var(--ds-type-unit) * 0.5);
+    --ds-brand-subtitle-tracking: var(--tracking-widest);
+    --ds-hero-padding-x: calc(var(--spacing) * 6);
+    --ds-hero-padding-y: calc(var(--spacing) * 8);
+    --ds-hero-copy-width: 100%;
+    --ds-hero-description-size: var(--ds-text-detail);
+    --ds-hero-footnote-size: var(--ds-text-label);
+    --ds-step-size: calc(var(--ds-type-unit) * 1.375);
+    --ds-text-prose: var(--ds-text-copy);
+    --ds-quote-padding-x: calc(var(--spacing) * 4);
+    --ds-quote-padding-y: calc(var(--spacing) * 3.5);
+    --ds-table-cell-padding: calc(var(--spacing) * 2.5);
+  }
+  @variant max-sm {
+    --ds-space-panel: calc(var(--spacing) * 6);
+    --ds-space-section: calc(var(--spacing) * 12);
+    --ds-space-page-block: calc(var(--spacing) * 6);
+  }
+}

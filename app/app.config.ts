@@ -9,25 +9,53 @@ export default defineAppConfig({
       warning: 'amber',
       error: 'rose',
     },
+    // Tailwind's custom theme generates CSS; the UI merger also needs to
+    // know these names so e.g. text-card replaces text-base, not text color.
+    tv: {
+      twMergeConfig: {
+        extend: {
+          theme: {
+            text: ['2xs', 'label', 'meta', 'caption', 'detail', 'copy', 'body', 'prose', 'card', 'section', 'title', 'display'],
+            spacing: ['gutter', 'inline', 'stack', 'panel', 'section', 'layout', 'grid', 'page-block', 'control', 'icon'],
+            container: ['page', 'reading', 'search'],
+            radius: ['card', 'hero'],
+            shadow: ['card'],
+            leading: ['copy', 'prose', 'heading'],
+            tracking: ['label', 'heading', 'display'],
+          },
+        },
+      },
+    },
     button: { slots: { base: 'cursor-pointer font-medium' } },
-    container: { base: 'max-w-(--ui-container) px-(--ds-page-gutter) sm:px-(--ds-page-gutter) lg:px-(--ds-page-gutter)' },
+    container: { base: 'max-w-page px-gutter sm:px-gutter lg:px-gutter' },
     header: { slots: { left: 'lg:flex-none', right: 'lg:flex-none gap-2', container: 'gap-4' } },
     pageCard: {
       slots: {
-        root: 'rounded-[var(--ds-radius-card)]',
-        container: 'p-6 sm:p-7',
-        header: 'w-full mb-6',
-        title: 'font-serif text-2xl font-semibold',
-        description: 'mt-3 text-sm leading-7',
-        footer: 'w-full mt-6 pt-4 border-t border-default',
+        root: 'rounded-card',
+        container: 'p-panel sm:p-panel',
+        header: 'w-full mb-stack',
+        title: 'font-serif text-card font-semibold',
+        description: 'text-sm leading-prose',
+        footer: 'w-full mt-stack pt-4 border-t border-default',
+      },
+      variants: {
+        variant: { outline: { root: 'bg-raised' } },
+        title: { true: { description: 'mt-inline' } },
+      },
+    },
+    card: {
+      slots: {
+        root: 'rounded-card',
+        header: 'p-panel sm:px-panel',
+        body: 'p-panel sm:p-panel',
+        footer: 'p-panel sm:px-panel',
       },
       variants: { variant: { outline: { root: 'bg-raised' } } },
     },
-    card: {
-      slots: { root: 'rounded-[var(--ds-radius-card)]' },
-      variants: { variant: { outline: { root: 'bg-raised' } } },
+    modal: {
+      slots: { content: 'bg-raised' },
+      variants: { fullscreen: { false: { content: 'rounded-card w-[calc(100vw-var(--ds-page-gutter)*2)]' } } },
     },
-    modal: { slots: { content: 'rounded-[var(--ds-radius-card)] bg-raised' } },
-    contentToc: { slots: { container: 'lg:py-0', link: 'text-xs leading-6' } },
+    contentToc: { slots: { container: 'lg:py-0', link: 'text-caption leading-prose' } },
   },
 })

@@ -1,0 +1,60 @@
+/* Tailwind 4 custom theme: map purpose tokens to utility namespaces.
+   Inline aliases make utilities read the responsive token directly.
+   Register custom names in app.config.ts ui.tv so Nuxt UI merges them. */
+@theme inline {
+  --color-raised: var(--ds-surface-raised);
+  --color-tint: var(--ds-surface-tint);
+  --color-hero-action: var(--ds-hero-action-bg);
+  --color-hero-action-hover: var(--ds-hero-action-hover);
+  --color-hero-action-text: var(--ds-hero-action-text);
+
+  --text-label: var(--ds-text-label);
+  --text-label--line-height: var(--ds-leading-label);
+  --text-meta: var(--ds-text-meta);
+  --text-meta--line-height: var(--leading-normal);
+  --text-caption: var(--ds-text-caption);
+  --text-caption--line-height: var(--leading-normal);
+  --text-detail: var(--ds-text-detail);
+  --text-detail--line-height: var(--leading-relaxed);
+  --text-copy: var(--ds-text-copy);
+  --text-copy--line-height: var(--ds-leading-copy);
+  --text-body: var(--ds-text-body);
+  --text-body--line-height: var(--leading-normal);
+  --text-prose: var(--ds-text-prose);
+  --text-prose--line-height: var(--ds-leading-prose);
+  --text-card: var(--ds-text-card);
+  --text-card--line-height: var(--ds-leading-heading);
+  --text-section: var(--ds-text-section);
+  --text-section--line-height: var(--ds-leading-heading);
+  --text-title: var(--ds-text-title);
+  --text-title--line-height: var(--ds-leading-heading);
+  --text-display: var(--ds-text-display);
+  --text-display--line-height: var(--ds-leading-display);
+  --leading-copy: var(--ds-leading-copy);
+  --leading-prose: var(--ds-leading-prose);
+  --leading-heading: var(--ds-leading-heading);
+  --tracking-label: var(--ds-tracking-label);
+  --tracking-heading: var(--ds-tracking-heading);
+  --tracking-display: var(--ds-tracking-display);
+
+  --spacing-gutter: var(--ds-page-gutter);
+  --spacing-inline: var(--ds-space-inline);
+  --spacing-stack: var(--ds-space-stack);
+  --spacing-panel: var(--ds-space-panel);
+  --spacing-section: var(--ds-space-section);
+  --spacing-layout: var(--ds-space-layout);
+  --spacing-grid: var(--ds-space-grid);
+  --spacing-page-block: var(--ds-space-page-block);
+  --spacing-control: var(--ds-control-size);
+  --spacing-icon: var(--ds-icon-size);
+  --container-page: var(--ds-page-width);
+  --container-reading: var(--ds-reading-width);
+  --container-search: var(--ds-dialog-width);
+  --radius-card: var(--ds-radius-card);
+  --radius-hero: var(--ds-radius-hero);
+  --shadow-card: var(--ds-shadow-card);
+  --transition-duration-fast: var(--ds-duration-fast);
+  --transition-duration-normal: var(--ds-duration-normal);
+  --default-transition-duration: var(--ds-duration-fast);
+  --default-transition-timing-function: var(--ease-out);
+}

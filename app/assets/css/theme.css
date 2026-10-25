@@ -55,12 +55,6 @@
 
 /* Layer 3: component roles. Components never reach into a palette. */
 :root {
-  --ui-radius: var(--ds-radius-base);
-  --ui-container: var(--ds-page-width);
-  --ui-header-height: 4.75rem;
-  --ds-radius-card: calc(var(--ui-radius) * 3);
-  --ds-radius-hero: calc(var(--ui-radius) * 4);
-  --ds-shadow-card: 0 8px 28px -12px var(--ds-shadow-color);
   --ds-header-bg: color-mix(in oklch, var(--ui-bg) 92%, transparent);
   --ds-card-border-hover: color-mix(in oklch, var(--ui-primary) 45%, var(--ui-border));
   --ds-hero-bg: var(--ui-color-primary-950);
@@ -82,15 +76,4 @@
   --ds-link: var(--ui-primary);
   --ds-link-underline: color-mix(in oklch, var(--ui-primary) 40%, transparent);
   --ds-search-hover: var(--ds-surface-tint);
-}
-
-@theme inline {
-  --color-raised: var(--ds-surface-raised);
-  --color-tint: var(--ds-surface-tint);
-  --color-hero-action: var(--ds-hero-action-bg);
-  --color-hero-action-hover: var(--ds-hero-action-hover);
-  --color-hero-action-text: var(--ds-hero-action-text);
-  --radius-card: var(--ds-radius-card);
-  --radius-hero: var(--ds-radius-hero);
-  --shadow-card: var(--ds-shadow-card);
 }

@@ -8,11 +8,13 @@ Nuxt 4 + Nuxt UI 4 + Nuxt Content 3 的静态档案网站，使用 Tailwind CSS 
 
 ## 设计系统与官方技能
 
-配色遵循 **基础色板 → 语义主题 → 组件变量**：
+颜色与尺寸遵循 **基础尺度 → 语义用途 → 组件变量**，通过 Tailwind 4 CSS custom theme 接入：
 
 - `app/assets/css/primitives.css`：统一色相、OKLCH 色阶、字体和尺度。修改 `--hue-brand`、`--hue-canvas`、`--hue-accent` 即可调整全站的三组主色调。
-- `app/assets/css/theme.css`：浅／深色的 `--ui-*` 语义角色，以及横幅、插画、引用等组件变量。
-- `app/app.config.ts`：将色板接入 Nuxt UI，集中配置组件默认外观。页面使用 Tailwind 语义工具类，不写固定颜色。
+- `app/assets/css/theme.css`：浅／深色的 `--ui-*` 语义角色，以及横幅、插画、引用等颜色变量。
+- `app/assets/css/tokens.css`：字号、行高、间距、容器与组件尺寸及响应式覆盖。`--ds-type-unit` 和 Tailwind 的 `--spacing` 分别统一全站字号与空间密度。
+- `app/assets/css/tailwind-theme.css`：`@theme inline` 将用途变量映射为 `text-prose`、`p-panel`、`mt-section`、`gap-grid` 等工具类。
+- `app/app.config.ts`：将色板接入 Nuxt UI，集中配置组件默认外观及自定义工具类的合并规则。页面与 Nuxt UI 共用字号和间距尺度。
 
 细节与修改示例集中在 [设计系统](docs/design-system.md)。默认跟随系统，主题选择由 Nuxt UI 的 Color Mode 管理并持久保存；主题状态不另写一套。
 
@@ -64,7 +66,7 @@ pnpm dev
 
 Playwright优先使用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`，或云环境已有的 `/usr/bin/chromium`。其他环境可运行 `pnpm exec playwright install chromium`。测试需要4173端口可用，不复用不明的现有服务。
 
-主题验收使用 `@axe-core/playwright` 检查两种模式下的首页、百科和搜索弹窗，并验证系统偏好、切换持久化、变量传递及手机导航。视觉变动还需检查桌面与手机截图；自动规则不等同于完整人工可访问性审计。
+主题验收使用 `@axe-core/playwright` 检查两种模式下的首页、百科和搜索弹窗，并验证系统偏好、切换持久化、颜色／尺寸变量传递及手机导航。视觉变动还需检查桌面与手机截图；自动规则不等同于完整人工可访问性审计。
 
 项目选择TypeScript 5.9.3：当前Vue类型检查器不能加载TypeScript 7的编译入口。不要单独升级到7；待工具链兼容后一起升级并重新验证。
 
