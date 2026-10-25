@@ -91,7 +91,19 @@ jobs:
         run: |
           build_type="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.build_type')"
           if [[ "$build_type" != 'workflow' ]]; then
-            gh api --method PUT "repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow
+            if ! gh api --method PUT "repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow > "$RUNNER_TEMP/pages-source.json"; then
+              python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          response = json.loads((Path(os.environ['RUNNER_TEMP']) / 'pages-source.json').read_text())
+          detail = f"GitHub API {response.get('status', 'error')}: {response.get('message', 'Unable to update Pages source')}"
+          instruction = 'A repository administrator must select Settings > Pages > Source > GitHub Actions. Deployment will use the existing Pages site until then.'
+          annotation = (detail + '. ' + instruction).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+          print(f'::warning title=Pages source configuration::{annotation}')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f'### Pages source configuration\n\n{detail}\n\n{instruction}\n')
+          PY
+            fi
           fi
 
       - name: Read Pages configuration

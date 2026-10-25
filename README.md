@@ -65,6 +65,6 @@ Markdown原文与JSON正文来自同一个源文件；`worldTime.year: 0` 保持
 
 推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、百科深层链接和机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
 
-部署任务会将已启用的 Pages 站点切换为 **GitHub Actions** 来源（**Settings → Pages → Build and deployment → Source**），避免默认 Jekyll 流程同时发布源代码目录。工作流通过 GitHub 自带的 `GITHUB_TOKEN` 与 OIDC 发布，不需要额外配置部署密钥。构建任务只读仓库，部署任务单独获得 Pages 写入权限；Actions 版本固定到提交 SHA。若在新仓库复用本工作流，需先在该仓库设置中启用 Pages。
+Pages 来源应使用 **GitHub Actions**（**Settings → Pages → Build and deployment → Source**），避免默认 Jekyll 流程同时发布源代码目录。部署任务会尝试切换；若 GitHub 拒绝设置权限，会显示警告与具体原因，并继续向现有站点发布。此时需要仓库管理员在设置中切换来源。工作流通过 GitHub 自带的 `GITHUB_TOKEN` 与 OIDC 发布，不需要额外配置部署密钥。构建任务只读仓库，部署任务单独获得 Pages 写入权限；Actions 版本固定到提交 SHA。若在新仓库复用本工作流，需先在该仓库设置中启用 Pages。
 
 发布目录只包含生成的HTML、Nuxt资源、Pagefind索引和机器数据；不需要运行Nuxt服务器。当前仓库为用户站点，部署基路径为 `/`。不要把源资料、草稿、缓存或`.env`作为发布产物。
