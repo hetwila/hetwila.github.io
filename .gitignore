@@ -1,0 +1,17 @@
+node_modules/
+.nuxt/
+.output/
+.data/
+.cache/
+.generated/
+.pnpm-store/
+dist
+public/data/
+public/llms.txt
+test-results/
+playwright-report/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
