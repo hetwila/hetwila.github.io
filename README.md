@@ -2,7 +2,7 @@
 
 Nuxt 4 + Nuxt UI 4 + Nuxt Content 3 的第一个静态原型。设计背景见 [网站设计书](docs/网站设计书.md)。
 
-目前包含首页、两个互相链接的百科试读条目（禁制与 H31-01）、Pagefind 中文搜索，以及供 AI 直接读取的 Markdown／JSON。故事、模拟论坛和 Supabase 尚未实施，也没有发布到 GitHub Pages。
+目前包含首页、两个互相链接的百科试读条目（禁制与 H31-01）、Pagefind 中文搜索，以及供 AI 直接读取的 Markdown／JSON。故事、模拟论坛和 Supabase 尚未实施。
 
 ## 开发环境
 
@@ -59,8 +59,12 @@ Markdown原文与JSON正文来自同一个源文件；`worldTime.year: 0` 保持
 
 这是**两个条目的原型**，不是216篇设定的完整网站。每次准备时重建公开导出，仅保留当前发布；历史机器版本的长期归档、完整来源映射和创作规则迁移留待下一阶段。搜索在开发模式使用公开样本的简单字串检索；生成产物使用Pagefind中文分词，正式验收以生成产物为准。
 
-## 静态部署边界
+## GitHub Pages 部署
 
-可部署目录是 `.output/public`，包含实际HTML、Nuxt资源、Pagefind索引和机器数据；不需要运行Nuxt服务器。当前仓库为用户站点，部署基路径为 `/`。
+站点地址：<https://hetwila.github.io/>。发布状态以 [Pages 工作流](https://github.com/hetwila/hetwila.github.io/actions/workflows/pages.yml) 为准。
 
-当前尚未配置站点部署工作流。未来部署时，只发布上述目录；不要把源资料、草稿、缓存或`.env`作为发布产物。
+推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、百科深层链接和机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
+
+仓库的 **Settings → Pages → Build and deployment → Source** 应使用 **GitHub Actions**，避免默认 Jekyll 流程同时发布源代码目录。工作流通过 GitHub 自带的 `GITHUB_TOKEN` 与 OIDC 发布，不需要额外配置部署密钥。构建任务只读仓库，部署任务单独获得 Pages 写入权限；Actions 版本固定到提交 SHA。
+
+发布目录只包含生成的HTML、Nuxt资源、Pagefind索引和机器数据；不需要运行Nuxt服务器。当前仓库为用户站点，部署基路径为 `/`。不要把源资料、草稿、缓存或`.env`作为发布产物。

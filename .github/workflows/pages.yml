@@ -1,0 +1,126 @@
+name: Deploy website to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+env:
+  NUXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      content-release: ${{ steps.content.outputs.release }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          cache: true
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check types
+        run: pnpm typecheck
+
+      - name: Test content
+        run: pnpm test:content
+
+      - name: Generate static site and search index
+        run: pnpm generate
+
+      - name: Install Chromium for browser tests
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Test generated site
+        run: pnpm test:e2e
+
+      - name: Record content release
+        id: content
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs'
+          const manifest = JSON.parse(readFileSync('.output/public/data/v1/manifest.json', 'utf8'))
+          if (typeof manifest.siteRelease !== 'string') throw new Error('Missing content release')
+          appendFileSync(process.env.GITHUB_OUTPUT, `release=${manifest.siteRelease}\n`)
+          JS
+
+      - name: Upload static site
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: .output/public
+
+  deploy:
+    name: Deploy and verify
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Read Pages configuration
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+
+      - name: Verify published pages and machine-readable content
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+          EXPECTED_RELEASE: ${{ needs.build.outputs.content-release }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, time, urllib.request
+
+          base = os.environ['SITE_URL'].rstrip('/')
+          def read(path):
+              request = urllib.request.Request(base + path, headers={'Cache-Control': 'no-cache'})
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  return response.read()
+
+          for attempt in range(12):
+              try:
+                  manifest = json.loads(read('/data/v1/manifest.json'))
+                  assert manifest['siteRelease'] == os.environ['EXPECTED_RELEASE'], 'Content release has not propagated'
+                  assert manifest['documentCount'] > 0, 'No public documents'
+                  for path, title in [('/', '世界辽阔'), ('/wiki/ban', '禁制'), ('/wiki/h31-01', '南港公共禁制启用')]:
+                      assert title in read(path).decode(), f'Missing page content: {path}'
+                  assert '/data/v1/manifest.json' in read('/llms.txt').decode()
+                  for path, expected in manifest['files'].items():
+                      assert hashlib.sha256(read(path)).hexdigest() == expected, f'Content checksum mismatch: {path}'
+                  print(f'Published site verified: {base} ({manifest["siteRelease"]})')
+                  break
+              except Exception as error:
+                  if attempt == 11:
+                      raise
+                  print(f'Waiting for Pages propagation: {error}', flush=True)
+                  time.sleep(10)
+          PY
