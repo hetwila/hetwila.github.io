@@ -7,7 +7,7 @@ test('read from the entry page through both linked concepts without runtime erro
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('世界辽阔')
-  await expect(page.getByText('2 篇试读条目')).toBeVisible()
+  await expect(page.getByText('13 个百科条目')).toBeVisible()
   await page.getByRole('link', { name: '开始阅读', exact: true }).last().click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('禁制')
   await page.locator('.article-prose').getByRole('link', { name: /H31-01/ }).click()
@@ -36,7 +36,7 @@ test('Chinese search and event IDs use the generated Pagefind index', async ({ p
 test('public articles remain readable and linked with JavaScript disabled', async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false })
   const page = await context.newPage()
-  await page.goto('http://127.0.0.1:4173/wiki/ban')
+  await page.goto('http://127.0.0.1:4173/wiki/禁制')
   await expect(page.locator('main')).toContainText('能力强度不能通过简单增加')
   await page.locator('.article-prose').getByRole('link', { name: /H31-01/ }).click()
   await expect(page.locator('main')).toContainText('当时参与者首先关心工程能否可靠运行')
@@ -44,12 +44,12 @@ test('public articles remain readable and linked with JavaScript disabled', asyn
   await context.close()
 })
 
-test('machine readers discover, verify and read the same two public documents with HTTP alone', async ({ request }) => {
+test('machine readers discover, verify and read the same public documents with HTTP alone', async ({ request }) => {
   const response = await request.get('/data/v1/manifest.json')
   expect(response.ok()).toBeTruthy()
   const manifest = await response.json()
   const catalog = await (await request.get(manifest.catalog)).json()
-  expect(catalog).toHaveLength(2)
+  expect(catalog).toHaveLength(13)
   for (const item of catalog) {
     const md = await request.get(item.markdownUrl)
     expect(md.ok()).toBeTruthy()
@@ -73,13 +73,13 @@ test('mobile layouts fit the viewport and the search dialog supports keyboard di
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).not.toBeVisible()
-  await page.goto('/wiki/h31-01')
+  await page.goto('/wiki/南港公共禁制启用')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy()
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 })
 
 test('unbuilt routes return 404, while both article deep links return 200', async ({ request }) => {
-  expect((await request.get('/wiki/ban')).status()).toBe(200)
-  expect((await request.get('/wiki/h31-01')).status()).toBe(200)
+  expect((await request.get('/wiki/禁制')).status()).toBe(200)
+  expect((await request.get('/wiki/南港公共禁制启用')).status()).toBe(200)
   expect((await request.get('/wiki/not-a-published-entry')).status()).toBe(404)
 })

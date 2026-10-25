@@ -1,3 +1,8 @@
+import { existsSync, readFileSync } from 'node:fs'
+
+const routeFile = new URL('./.generated/routes.json', import.meta.url)
+const routes: string[] = existsSync(routeFile) ? JSON.parse(readFileSync(routeFile, 'utf8')) : ['/', '/wiki', '/timeline', '/reference']
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-24',
   modules: ['@nuxt/ui', '@nuxt/content'],
@@ -20,7 +25,7 @@ export default defineNuxtConfig({
     prerender: {
       crawlLinks: true,
       failOnError: true,
-      routes: ['/', '/wiki/ban', '/wiki/h31-01'],
+      routes,
     },
   },
   typescript: { strict: true },

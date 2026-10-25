@@ -2,7 +2,7 @@
 
 Nuxt 4 + Nuxt UI 4 + Nuxt Content 3 的静态档案网站，使用 Tailwind CSS 4 和分层设计系统。站点：<https://hetwila.github.io/>。
 
-目前包含首页、两个互相链接的百科试读条目（禁制与 H31-01）、Pagefind 中文搜索，以及供 AI 直接读取的 Markdown／JSON。故事、模拟论坛和 Supabase 尚未实施。
+目前包含首页、百科目录与分类、年代列表、13 个百科条目（禁制机制与 H31 的全部 12 个事件）、两份可阅读全文的来源资料、Pagefind 中文搜索，以及供 AI 直接读取的 Markdown／JSON 和关系、来源锚点映射。故事、模拟论坛和 Supabase 尚未实施。
 
 已支持系统／浅色／深色主题、手机导航、页面目录与键盘搜索。开发约定见 [AGENTS.md](AGENTS.md)，主题与组件契约见 [设计系统](docs/design-system.md)，完整产品规划见 [网站设计书](docs/网站设计书.md)。三份文档分别记录工作约定、实现规范和后续目标。
 
@@ -72,24 +72,37 @@ Playwright优先使用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`，或云环境已有的 
 
 现有上游依赖还有 `unctx` 对 `oxc-parser`／`unplugin` 的可选peer范围提示，以及开发启动时MDC预优化条目提示。它们来自已锁定的Nuxt／Content依赖组合；没有通过忽略类型错误或禁用包校验来掩盖问题。后续升级时需同时复核构建和开发浏览器行为。
 
+## 中文标题、链接与扩充内容
+
+内容文件名保留中文，例如 `content/wiki/禁制.md`；`routeKey: 禁制` 对应 `/wiki/禁制`。标题需要消歧时使用“名称（限定词）”，不为技术路径另造英文译名。路径保存 NFC Unicode，URL 编码由浏览器／HTTP 客户端处理。框架生成的英文页面组件文件名不等于内容标题。
+
+- `uid` 是长期身份。原 `wiki:ban`、`event:h31-01` 保留，历史事件继续使用原 H 编号。
+- 改名时同步文件名与 `routeKey`，把旧 key 加入 `redirects`。`/wiki/ban` 与 `/wiki/h31-01` 已保留静态迁移页、canonical、新地址链接；有 JS 时会跳转并保留查询参数与片段。GitHub Pages 上没有声称返回 301。
+- `aliases` 是搜索别名，`redirects` 是实际旧地址；两者分开维护。文件、正式路径与旧地址必须唯一。
+- 正文使用标准 Markdown 链接，如 `[禁制](/wiki/禁制#原理与作用边界)`。构建用 remark AST 提取链接与章节坐标，检查公开目标和锚点，并自动生成反链；有特定语义的关系仍在 `relations` 中维护。
+- 新增条目必须指定已核验的 `sourceRefs`，保留原事实状态、纪年、名称性质与来源编号。新增来源在 `sources/reading-map.json` 显式登记，并由发布清单的 SHA-256 校验后进入可读原文页。
+- `/wiki` 和 `/wiki/category/<分类名>` 提供完整静态目录；目录筛选可按名称、别名、编号缩小范围。`/timeline` 按有效数字年份排序，保留年 0。
+
 ## 内容与机器读取
 
 - 编辑源：`content/wiki/`。每篇文件的 `routeKey` 与文件名一致。
-- 来源：`sources/releases/3.0.3/` 保存本次用到的两份原始文档和SHA-256；没有导入整个附件。
+- 来源：`sources/releases/3.0.3/` 保存两份原始文档和 SHA-256，原文件保持不变；`sources/reading-map.json` 指定可公开原文的中文阅读路径。
 - 结构：`shared/content-schema.ts`，包括UID、事实状态、世界纪年、来源和关系。
-- 准备：`scripts/prepare-content.ts` 验证来源文件，只将 `published + public` 文档复制到 `.generated/content/`，由Nuxt Content读取。
-- 对外入口：`/llms.txt`、`/data/v1/manifest.json`。清单指向当前带内容哈希的版本目录，包含Markdown、JSON、目录及关系。
+- 准备：`scripts/prepare-content.ts` 核对来源哈希／锚点和链接／身份，只将 `published + public` 百科及允许公开的来源生成到 `.generated/content/`，由 Nuxt Content 读取；显式 path 保留中文标题，避免框架自动 slug 化。
+- 对外入口：`/llms.txt`、`/data/v1/manifest.json`。清单指向内容哈希版本中的 Markdown、JSON、目录、正向／反向关系、来源原文及 19 个原始锚点的阅读映射。机器导出的正文文件也使用中文名；HTTP 地址按标准 URL 编码。
 - 框架生成的数据库／payload同样只包含这份公开集合。私密内容不能仅靠页面过滤隐藏，也不要提交到公开Git仓库。
 
 Markdown原文与JSON正文来自同一个源文件；`worldTime.year: 0` 保持数字0，不转为公历。原文内部链接使用实际可访问的站内URL，关系由UID解析。页面的来源面板保留附件路径及锚点，供核对。
 
-这是**两个条目的原型**，不是216篇设定的完整网站。每次准备时重建公开导出，仅保留当前发布；历史机器版本的长期归档、完整来源映射和创作规则迁移留待下一阶段。搜索在开发模式使用公开样本的简单字串检索；生成产物使用Pagefind中文分词，正式验收以生成产物为准。
+当前覆盖 **13 个百科条目、2 / 216 份来源、19 / 1,855 个原始锚点、12 / 546 个 H 事件**，不是完整设定库。本轮只使用仓库内可核验的来源；原始 ZIP 已不在当前云环境，继续扩展其他主题需要重新提供附件。来源页面中的未收录引用显示原路径，原始 Markdown 下载保留原字节；不把这些缺失材料算作已迁移。
+
+每次准备时重建公开导出，仅保留当前发布；历史机器版本长期归档和全库迁移仍待实施。搜索精确匹配标题、别名、H 编号优先，再合并 Pagefind 全文结果并去重；支持全半角及拉丁字母大小写规范化。开发模式的全文部分使用公开文档字串检索，正式验收以生成产物为准。
 
 ## GitHub Pages 部署
 
 站点地址：<https://hetwila.github.io/>。发布状态以 [Pages 工作流](https://github.com/hetwila/hetwila.github.io/actions/workflows/pages.yml) 为准。
 
-推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、百科深层链接和机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
+推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容／来源／链接测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、全部中文百科／来源深链接、旧地址入口和机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
 
 当前仓库的 Pages 来源已由管理员设置为 **GitHub Actions**（**Settings → Pages → Build and deployment → Source**）。工作流核对该设置，并通过 GitHub 自带的 `GITHUB_TOKEN` 与 OIDC 发布，不需要额外配置部署密钥。构建任务只读仓库，部署任务单独获得 Pages 写入权限；Actions 版本固定到提交 SHA。若在新仓库复用本工作流，需先启用 Pages 并选择 GitHub Actions 来源；自动切换被 GitHub 拒绝时会明确报告权限警告。
 

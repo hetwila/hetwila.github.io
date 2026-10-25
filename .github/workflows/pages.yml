@@ -119,11 +119,11 @@ jobs:
           EXPECTED_RELEASE: ${{ needs.build.outputs.content-release }}
         run: |
           python3 - <<'PY'
-          import hashlib, json, os, time, urllib.request
+          import hashlib, json, os, time, urllib.request, urllib.parse
 
           base = os.environ['SITE_URL'].rstrip('/')
           def read(path):
-              request = urllib.request.Request(base + path, headers={'Cache-Control': 'no-cache'})
+              request = urllib.request.Request(base + urllib.parse.quote(path, safe='/%'), headers={'Cache-Control': 'no-cache'})
               with urllib.request.urlopen(request, timeout=20) as response:
                   return response.read()
 
@@ -132,8 +132,13 @@ jobs:
                   manifest = json.loads(read('/data/v1/manifest.json'))
                   assert manifest['siteRelease'] == os.environ['EXPECTED_RELEASE'], 'Content release has not propagated'
                   assert manifest['documentCount'] > 0, 'No public documents'
-                  for path, title in [('/', '世界辽阔'), ('/wiki/ban', '禁制'), ('/wiki/h31-01', '南港公共禁制启用')]:
-                      assert title in read(path).decode(), f'Missing page content: {path}'
+                  assert '世界辽阔' in read('/').decode()
+                  catalog = json.loads(read(manifest['catalog']))
+                  sources = json.loads(read(manifest['references']))
+                  for entry in [*catalog, *sources]:
+                      assert entry['title'] in read(entry['path']).decode(), f'Missing page content: {entry["path"]}'
+                  for entry in json.loads(read(manifest['redirects'])):
+                      assert 'canonical' in read(entry['path']).decode(), f'Missing migration page: {entry["path"]}'
                   assert '/data/v1/manifest.json' in read('/llms.txt').decode()
                   for path, expected in manifest['files'].items():
                       assert hashlib.sha256(read(path)).hexdigest() == expected, f'Content checksum mismatch: {path}'

@@ -5,14 +5,14 @@ const searchOpen = ref(false)
 const route = useRoute()
 const items = computed<NavigationMenuItem[]>(() => [
   { label: '开始阅读', to: '/', active: route.path === '/' && !route.hash },
-  { label: '设定百科', to: '/#entries', active: (route.path.startsWith('/wiki') && route.path !== '/wiki/h31-01') || route.hash === '#entries' },
-  { label: '历史片段', to: '/wiki/h31-01', active: route.path === '/wiki/h31-01' },
+  { label: '设定百科', to: '/wiki', active: route.path.startsWith('/wiki') },
+  { label: '年代', to: '/timeline', active: route.path === '/timeline' },
 ])
 defineShortcuts({ meta_k: () => { searchOpen.value = !searchOpen.value } })
 </script>
 
 <template>
-  <UHeader class="site-header" :menu="{ description: '阅读设定百科与历史片段。' }">
+  <UHeader class="site-header" :menu="{ description: '阅读设定百科与年代事件。' }">
     <template #left>
       <NuxtLink to="/" class="brand" aria-label="赫特维拉首页">
         <ArchiveMark />
@@ -32,7 +32,7 @@ defineShortcuts({ meta_k: () => { searchOpen.value = !searchOpen.value } })
 
     <template #body>
       <UNavigationMenu :items="items" orientation="vertical" aria-label="移动导航" />
-      <p class="mt-8 border-t border-default pt-5 text-caption leading-prose text-muted">设定 3.0.3 · 试读档案<br>从一个概念，走进赫特维拉。</p>
+      <p class="mt-8 border-t border-default pt-5 text-caption leading-prose text-muted">设定 3.0.3 · 世界观档案<br>从一个概念，走进赫特维拉。</p>
     </template>
   </UHeader>
   <SearchDialog v-model:open="searchOpen" />

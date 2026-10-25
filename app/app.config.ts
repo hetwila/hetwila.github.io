@@ -31,7 +31,9 @@ export default defineAppConfig({
     header: { slots: { left: 'lg:flex-none', right: 'lg:flex-none gap-2', container: 'gap-4' } },
     pageCard: {
       slots: {
-        root: 'rounded-card',
+        // Give the library's overlay link its own hit box as well as its
+        // absolute child, so keyboard/browser tooling can target the link.
+        root: 'rounded-card [&>a]:absolute [&>a]:inset-0',
         container: 'p-panel sm:p-panel',
         header: 'w-full mb-stack',
         title: 'font-serif text-card font-semibold',

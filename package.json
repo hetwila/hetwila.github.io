@@ -9,7 +9,7 @@
   "scripts": {
     "prepare:content": "node scripts/prepare-content.ts",
     "dev": "pnpm prepare:content && pnpm run --parallel \"/^dev:/\"",
-    "dev:content": "node --watch-path=content/wiki --watch-path=shared --watch-path=scripts scripts/prepare-content.ts",
+    "dev:content": "node --watch-path=content/wiki --watch-path=shared --watch-path=scripts --watch-path=sources scripts/prepare-content.ts",
     "dev:nuxt": "nuxt dev --host 0.0.0.0",
     "build": "pnpm prepare:content && nuxt build",
     "generate": "pnpm prepare:content && nuxt generate && pagefind --site .output/public",
@@ -34,11 +34,18 @@
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@playwright/test": "1.64.1",
+    "@types/mdast": "4.0.4",
     "@types/node": "24.10.1",
+    "github-slugger": "2.0.0",
     "gray-matter": "4.0.3",
+    "mdast-util-to-string": "4.0.0",
     "pagefind": "1.5.2",
+    "remark-gfm": "4.0.1",
+    "remark-parse": "11.0.0",
     "serve": "14.2.5",
     "typescript": "5.9.3",
+    "unified": "11.0.5",
+    "unist-util-visit": "5.1.0",
     "vue-tsc": "3.3.13"
   }
 }

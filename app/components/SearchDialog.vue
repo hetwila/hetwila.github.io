@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { PublicDocument } from '../../shared/content-schema'
+import catalog from '../../.generated/catalog.json'
+import { normalizeQuery } from '~/utils/content'
 
 const open = defineModel<boolean>('open', { default: false })
 const query = ref('')
@@ -16,7 +18,7 @@ let devDocuments: Promise<PublicDocument[]> | undefined
 
 async function search() {
   const id = ++request
-  const term = query.value.trim()
+  const term = normalizeQuery(query.value)
   if (!term) { results.value = []; pending.value = false; return }
   pending.value = true
   error.value = false
@@ -38,7 +40,18 @@ async function search() {
       const data = await Promise.all(response.results.slice(0, 8).map(result => result.data()))
       found = data.map(item => ({ title: item.meta.title, url: item.url, excerpt: item.excerpt.replace(/<[^>]*>/g, '') }))
     }
-    if (id === request) results.value = found
+    // Exact names, aliases and source IDs precede full-text matches. This
+    // keeps a responsible definition discoverable as the archive grows.
+    const exact = catalog.filter(doc => [doc.title, ...doc.aliases, ...doc.sourceIds].some(value => normalizeQuery(value) === term))
+      .map(doc => ({ title: doc.title, url: doc.path, excerpt: doc.description }))
+    const seen = new Set<string>()
+    const combined = [...exact, ...found].filter(item => {
+      const key = decodeURI(item.url).split('#')[0]!.replace(/\/$/, '')
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    }).slice(0, 8)
+    if (id === request) results.value = combined
   } catch {
     if (id === request) { error.value = true; results.value = [] }
     engine = undefined
@@ -59,7 +72,7 @@ onBeforeUnmount(() => { clearTimeout(debounce); ++request })
 </script>
 
 <template>
-  <UModal v-model:open="open" title="搜索设定" description="检索已收录的试读条目，或通过历史编号定位事件。" :ui="{ content: 'sm:max-w-search', body: 'p-0 sm:p-0' }">
+  <UModal v-model:open="open" title="搜索设定" description="检索已收录的百科条目，或通过历史编号定位事件。" :ui="{ content: 'sm:max-w-search', body: 'p-0 sm:p-0' }">
     <template #body>
       <div class="search-field"><UInput ref="input" v-model="query" autofocus size="xl" icon="i-lucide-search" placeholder="试试「禁制」或「H31-01」" aria-label="搜索关键词" class="w-full" /></div>
       <div class="search-results" aria-live="polite">
@@ -67,9 +80,9 @@ onBeforeUnmount(() => { clearTimeout(debounce); ++request })
         <p v-else-if="error" class="search-message">搜索暂时不可用。请从首页的条目列表继续阅读。</p>
         <template v-else-if="results.length"><NuxtLink v-for="result in results" :key="result.url" :to="result.url" class="search-result" @click="open = false"><UIcon name="i-lucide-file-text" /><div><strong>{{ result.title }}</strong><p>{{ result.excerpt }}</p></div><UIcon name="i-lucide-arrow-up-right" /></NuxtLink></template>
         <p v-else-if="query.trim()" class="search-message">没有找到相关条目。试试其他关键词或事件编号。</p>
-        <p v-else class="search-message">从一个名字、概念或历史编号开始。</p>
+        <p v-else class="search-message">从一个名字、别名或历史编号开始。</p>
       </div>
-      <div class="search-bottom">当前为试读档案，完整内容将逐步收录。<span>ESC 关闭</span></div>
+      <div class="search-bottom">检索 {{ catalog.length }} 个已收录条目。<span>ESC 关闭</span></div>
     </template>
   </UModal>
 </template>

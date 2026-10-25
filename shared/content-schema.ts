@@ -1,13 +1,22 @@
 import { z } from 'zod'
 
+// Titles stay readable in filenames and URLs. Encoding is only a transport
+// concern; reserved path characters and normalization collisions are rejected.
+export const routeKeySchema = z.string().min(1).max(100)
+  .regex(/^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} _·（）()、，：《》「」-]*$/u)
+  .refine(value => value === value.trim() && value === value.normalize('NFC'), 'Use a trimmed NFC title')
+  .refine(value => !['index', 'category'].includes(value.toLowerCase()), 'Reserved route')
+
 export const wikiSchema = z.object({
-  uid: z.string().regex(/^(wiki|event):[a-z0-9-]+$/),
-  routeKey: z.string().regex(/^[a-z0-9-]+$/),
+  uid: z.string().regex(/^(wiki|event):[\p{L}\p{M}\p{N}·()-]+$/u),
+  routeKey: routeKeySchema,
+  redirects: z.array(routeKeySchema).default([]),
   title: z.string().min(1),
   description: z.string().min(1),
   category: z.string().min(1),
   entityType: z.enum(['concept', 'event']),
   aliases: z.array(z.string()).default([]),
+  nameStatus: z.enum(['official', 'working', 'descriptive']).default('descriptive'),
   sourceIds: z.array(z.string()).default([]),
   factStatus: z.enum(['canon', 'open', 'working', 'story-local', 'deprecated']),
   narrativeLayer: z.literal('author-reference'),
@@ -38,4 +47,14 @@ export interface PublicDocument extends WikiMetadata {
   bodyMarkdown: string
   markdownUrl: string
   jsonUrl: string
+}
+
+export interface ContentRelation {
+  source: string
+  target: string
+  type: 'concerns' | 'mentions'
+  origin: 'metadata' | 'markdown'
+  sourcePath: string
+  targetPath: string
+  sectionId?: string
 }
