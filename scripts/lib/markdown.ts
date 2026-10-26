@@ -7,6 +7,10 @@ import GithubSlugger from 'github-slugger'
 
 const parser = unified().use(remarkParse).use(remarkGfm)
 
+export function markdownText(markdown: string) {
+  return toString(parser.parse(markdown)).replace(/\s+/gu, '')
+}
+
 export function analyzeMarkdown(markdown: string) {
   const tree = parser.parse(markdown)
   const definitions = new Map<string, string>()

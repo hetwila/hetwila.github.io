@@ -32,7 +32,7 @@ for (const mode of ['light', 'dark'] as const) {
   test(`${mode} mode keeps pages and search accessible, including text contrast`, async ({ page }) => {
     test.setTimeout(60_000)
     await page.emulateMedia({ colorScheme: mode })
-    for (const path of ['/', '/wiki/禁制', '/wiki/南港公共禁制启用', '/wiki', '/timeline', '/reference', '/reference/公共禁制纪元初期（H31）']) {
+    for (const path of ['/', '/wiki/禁制', '/wiki/南港公共禁制启用', '/wiki', '/timeline', '/reference', '/reference/公共禁制纪元初期（H31）', '/stories', '/stories/第一次选择', '/wiki/1747年议长选举']) {
       await page.goto(path)
       await expect(page.locator('html')).toHaveClass(new RegExp(mode))
       await expect(page.getByRole('button', { name: '显示主题' })).toBeEnabled()

@@ -6,13 +6,14 @@ const route = useRoute()
 const items = computed<NavigationMenuItem[]>(() => [
   { label: '开始阅读', to: '/', active: route.path === '/' && !route.hash },
   { label: '设定百科', to: '/wiki', active: route.path.startsWith('/wiki') },
+  { label: '故事书架', to: '/stories', active: route.path.startsWith('/stories') },
   { label: '年代', to: '/timeline', active: route.path === '/timeline' },
 ])
 defineShortcuts({ meta_k: () => { searchOpen.value = !searchOpen.value } })
 </script>
 
 <template>
-  <UHeader class="site-header" :menu="{ description: '阅读设定百科与年代事件。' }">
+  <UHeader class="site-header" :menu="{ description: '阅读设定百科、故事与年代事件。' }">
     <template #left>
       <NuxtLink to="/" class="brand" aria-label="赫特维拉首页">
         <ArchiveMark />

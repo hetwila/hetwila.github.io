@@ -9,7 +9,7 @@
   "scripts": {
     "prepare:content": "node scripts/prepare-content.ts",
     "dev": "pnpm prepare:content && pnpm run --parallel \"/^dev:/\"",
-    "dev:content": "node --watch-path=content/wiki --watch-path=shared --watch-path=scripts --watch-path=sources scripts/prepare-content.ts",
+    "dev:content": "node --watch-path=content --watch-path=shared --watch-path=scripts --watch-path=sources scripts/prepare-content.ts",
     "dev:nuxt": "nuxt dev --host 0.0.0.0",
     "build": "pnpm prepare:content && nuxt build",
     "generate": "pnpm prepare:content && nuxt generate && pagefind --site .output/public",

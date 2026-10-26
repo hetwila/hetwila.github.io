@@ -1,9 +1,16 @@
 {
   "version": "3.0.3",
-  "scope": "原型所用的两份原始资料；不是完整附件",
+  "scope": "网站已引用的八份原始资料；完整附件另存 sources/archives，公开阅读范围由 reading-map.json 决定。",
   "archiveSha256": "15a77fe306250568bdb9bf535dc2b9e272bad7fb9bcb8b1d05eaba5a1135ce8b",
   "files": {
     "01_世界原理/04_禁制.md": "2cb852c6a5e899e511cbc7a9c768d0999decbb53bb56f6e1efb48a6531f69e38",
-    "07_历代历史/H31.md": "dff9cd1b698f851e6a16a6f9fadcabd3fdb3b033964128a99b5bf1bdd9254d86"
-  }
+    "07_历代历史/H31.md": "dff9cd1b698f851e6a16a6f9fadcabd3fdb3b033964128a99b5bf1bdd9254d86",
+    "07_历代历史/H48.md": "97916acd6a0d72ab5e595028c18dd5d417a54dec2299fc82eca5c01e330323cd",
+    "05_国家制度/07_选举.md": "f4cfd694b403b0dc5f05ba43c29d78064e4cbeb3bec0abe24cd706a0b09f9a39",
+    "05_国家制度/08_议事决策.md": "003bb3e8dbc81f5b129381e8e0634081325d2b6744ee31fa4511d7e964bdf49e",
+    "05_国家制度/10_议长年表_1747至1897.md": "1f1ee7843fb858a00043dcadc01c6eb14f546c4eb5b1ef5e38ab49f702cc1134",
+    "05_国家制度/02_身份与接应.md": "7a3f1ac1d4fe023b1797f6d78c17815d52bbbba7cd745064c34d34eafa60124a",
+    "02_人物与创作/02_诺菲莉亚.md": "41194b63f3a6711d030bf92fe8113d99d0172ffa01f9d55e3899a37b1438b2b8"
+  },
+  "archivePath": "sources/archives/赫特维拉统合设定_3.0.3.zip"
 }

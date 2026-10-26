@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import catalog from '../../.generated/catalog.json'
 const events = catalog.filter(entry => entry.entityType === 'event' && entry.worldTime.year !== undefined).sort((a, b) => a.worldTime.year! - b.worldTime.year!)
-useSeoMeta({ title: '年代', description: '沿着世界纪年阅读公共禁制纪元初期的十二个历史事件。' })
+useSeoMeta({ title: '年代', description: '沿着世界纪年阅读公共禁制初期与1747年议长选举。' })
 </script>
 
 <template>
   <main id="main" class="shell py-section">
-    <p class="eyebrow mb-3">HISTORY / H31</p>
-    <h1 class="section-title">公共空间第一次长期获得保护</h1>
-    <p class="mt-4 max-w-reading text-muted leading-copy">0—99年，公共禁制从南港的长期工程逐渐扩展到更多地方。保护的分配、维护的成本，以及禁制无法解决的日常纠纷，构成了这一时期的变化。</p>
-    <div class="my-stack flex flex-wrap gap-inline"><UBadge color="neutral" variant="outline">世界纪年 · 含0年</UBadge><UBadge color="neutral" variant="outline">{{ events.length }} 个事件</UBadge><UButton to="/reference/公共禁制纪元初期（H31）" variant="link" icon="i-lucide-book-open">阅读世纪原文</UButton></div>
+    <p class="eyebrow mb-3">HISTORY OF HETWILA</p>
+    <h1 class="section-title">沿着年代，阅读世界的变化</h1>
+    <p class="mt-4 max-w-reading text-muted leading-copy">从公共禁制启用，到1747年的首次议长直选。这里按年代串起已经整理的历史片段，逐步补充更多时期。</p>
+    <div class="my-stack flex flex-wrap gap-inline"><UBadge color="neutral" variant="outline">世界纪年 · 含0年</UBadge><UBadge color="neutral" variant="outline">{{ events.length }} 个事件</UBadge><UButton to="/reference/公共禁制纪元初期（H31）" variant="link" icon="i-lucide-book-open">阅读 H31 原文</UButton><UButton to="/reference/现代政治框架与共同保障（H48）" variant="link" icon="i-lucide-book-open">阅读 H48 原文</UButton></div>
     <ol aria-label="年代事件" class="max-w-reading space-y-stack">
       <li v-for="entry in events" :key="entry.uid" class="border-s border-accented ps-panel">
         <p class="font-serif text-card text-primary">{{ entry.worldTime.label }}</p>
@@ -18,6 +18,6 @@ useSeoMeta({ title: '年代', description: '沿着世界纪年阅读公共禁制
         <p class="mt-3 text-meta text-muted">{{ entry.sourceIds.join(' · ') }}</p>
       </li>
     </ol>
-    <p class="mt-section text-caption text-muted">这里按设定中的年份排列，0年是有效纪年。其他时代和不可换算的跨世界阶段尚未收录。</p>
+    <p class="mt-section text-caption text-muted">这里按设定中的年份排列，0年是有效纪年。这是一份持续扩充的事件目录，年代之间的空档不代表没有发生其他事件。</p>
   </main>
 </template>

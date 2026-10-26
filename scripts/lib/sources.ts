@@ -34,7 +34,9 @@ export async function readSources(root: string) {
     // ProseA uses Nuxt UI's link/button component. Empty source anchors are
     // locations, not controls: keep their IDs on non-interactive spans.
     markdown = markdown.replace(/<a id="([^"]+)"><\/a>/g, '<span id="$1"></span>')
-    markdown = markdown.replace(/^# [^\n]+\n+/, '')
+    // Some responsibility files put stable anchors before their first H1.
+    // The page supplies that title; leave those anchors in place.
+    markdown = markdown.replace(/^# [^\n]+\n+/m, '')
     return { ...source, markdown, unavailableLinks: replacements.filter(item => item.replacement.includes('尚未收录')).map(item => item.url) }
   })
 }

@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import catalog from '../../../.generated/catalog.json'
 import graph from '../../../.generated/relations.json'
-import references from '../../../.generated/references.json'
 import { factLabels } from '~/utils/content'
 
 const route = useRoute()
-const entry = computed(() => catalog.find(item => item.routeKey === route.params.slug || item.redirects.includes(String(route.params.slug))))
+const entry = computed(() => catalog.find(item => item.entityType !== 'story' && (item.routeKey === route.params.slug || item.redirects.some(key => key === String(route.params.slug)))))
 if (!entry.value) throw createError({ statusCode: 404, statusMessage: 'Not Found', message: '未找到条目' })
 const { data: article } = await useAsyncData(() => `wiki-${entry.value?.uid}`, () => queryCollection('wiki').where('routeKey', '=', entry.value!.routeKey).first())
 if (!article.value) throw createError({ statusCode: 404, statusMessage: 'Not Found', message: '未找到条目' })
@@ -14,15 +13,15 @@ const legacy = computed(() => entry.value && route.params.slug !== entry.value.r
 onMounted(() => watch(() => route.fullPath, () => {
   if (legacy.value) navigateTo({ path: entry.value!.path, hash: route.hash, query: route.query }, { replace: true })
 }, { immediate: true }))
-const related = computed(() => catalog.filter(item => graph.some(edge => edge.source === entry.value?.uid && edge.target === item.uid)))
-const backlinks = computed(() => catalog.filter(item => graph.some(edge => edge.target === entry.value?.uid && edge.source === item.uid)))
-const navigation = computed(() => [...new Set(catalog.map(item => item.category))].map(category => ({ label: category, to: `/wiki/category/${category}`, icon: category === '历史与变革' ? 'i-lucide-history' : 'i-lucide-orbit' })))
+const related = computed(() => catalog.filter(item => item.entityType !== 'story' && graph.some(edge => edge.source === entry.value?.uid && edge.target === item.uid)))
+const backlinks = computed(() => catalog.filter(item => item.entityType !== 'story' && graph.some(edge => edge.target === entry.value?.uid && edge.source === item.uid)))
+const navigation = computed(() => [...new Set(catalog.filter(item => item.entityType !== 'story').map(item => item.category))].map(category => ({ label: category, to: `/wiki/category/${category}`, icon: category === '历史与变革' ? 'i-lucide-history' : 'i-lucide-orbit' })))
 const events = catalog.filter(item => item.entityType === 'event' && item.worldTime.year !== undefined).sort((a, b) => a.worldTime.year! - b.worldTime.year!)
 const eventIndex = computed(() => events.findIndex(item => item.uid === entry.value?.uid))
 const previous = computed(() => eventIndex.value > 0 ? events[eventIndex.value - 1] : undefined)
 const next = computed(() => eventIndex.value >= 0 ? events[eventIndex.value + 1] : undefined)
-const sourceUrl = (path: string, anchor: string) => `${references.find(item => item.sourcePath === path)!.path}#${anchor}`
-const toc = computed(() => [...(article.value?.body.toc?.links ?? []), { id: 'source-heading', text: '来源与引用', depth: 2 }, ...(backlinks.value.length ? [{ id: 'backlinks-heading', text: '链入本页', depth: 2 }] : [])])
+const relatedStories = computed(() => catalog.filter(item => item.entityType === 'story' && graph.some(edge => edge.source === item.uid && edge.target === entry.value?.uid)))
+const toc = computed(() => [...(article.value?.body.toc?.links ?? []), { id: 'source-heading', text: '来源与引用', depth: 2 }, ...(relatedStories.value.length ? [{ id: 'related-stories', text: '相关故事', depth: 2 }] : []), ...(backlinks.value.length ? [{ id: 'backlinks-heading', text: '链入本页', depth: 2 }] : [])])
 useSeoMeta({ title: () => article.value?.title, description: () => article.value?.description, robots: () => legacy.value ? 'noindex, follow' : 'index, follow' })
 useHead(() => ({ link: [{ rel: 'canonical', href: `https://hetwila.github.io${entry.value!.path}` }] }))
 </script>
@@ -59,15 +58,15 @@ useHead(() => ({ link: [{ rel: 'canonical', href: `https://hetwila.github.io${en
       </header>
       <UContentToc :links="toc" title="本页内容" class="mobile-toc lg:hidden" data-pagefind-ignore />
       <ContentRenderer :value="article" class="article-prose" />
-      <UCard as="section" class="sources-panel mt-9" data-pagefind-ignore aria-labelledby="source-heading">
-        <template #header><h2 id="source-heading" class="flex items-center gap-2 text-sm font-semibold text-highlighted"><UIcon name="i-lucide-book-marked" class="text-primary" /> 来源与引用</h2></template>
-        <p class="mb-4 text-caption leading-prose text-muted">条目整理自作者提供的统合设定，保留原资料的定位坐标。</p>
-        <ul class="space-y-3"><li v-for="source in article.sourceRefs" :key="`${source.path}#${source.anchor}`" class="flex gap-inline leading-prose"><span class="shrink-0 text-caption text-muted">{{ source.role === 'primary' ? '主定义' : '补充' }}</span><NuxtLink :to="sourceUrl(source.path, source.anchor)" class="text-primary underline decoration-primary/40 hover:decoration-primary min-w-0"><code>{{ source.path }}#{{ source.anchor }}</code></NuxtLink></li></ul>
-        <template #footer><div class="flex flex-wrap gap-5">
-          <UButton v-if="exported" :to="exported.markdownUrl" external variant="link" icon="i-lucide-file-down" class="p-0 text-caption">读取 Markdown</UButton>
-          <UButton v-if="exported" :to="exported.jsonUrl" external variant="link" icon="i-lucide-braces" class="p-0 text-caption">读取 JSON</UButton>
-        </div></template>
-      </UCard>
+      <ContentSources :sources="article.sourceRefs" :markdown-url="exported?.markdownUrl" :json-url="exported?.jsonUrl" />
+      <section v-if="relatedStories.length" id="related-stories" class="mt-section" aria-labelledby="related-stories-heading" data-pagefind-ignore>
+        <p class="eyebrow mb-2">READ THE STORY</p><h2 id="related-stories-heading" class="section-title mb-stack">相关故事</h2>
+        <p class="mb-stack text-caption text-muted">这些作品描写或提及本条目。具体对白与场景属于故事叙事。</p>
+        <UPageCard v-for="item in relatedStories" :key="item.uid" :title="item.title" :description="item.description" :to="item.path" :aria-label="item.title" class="related-card">
+          <template #header><UBadge variant="soft">{{ item.worldTime.label }} · {{ item.category }}</UBadge></template>
+          <template #title><h3>{{ item.title }}</h3></template>
+        </UPageCard>
+      </section>
       <nav v-if="previous || next" aria-label="相邻年代事件" class="my-stack flex flex-wrap justify-between gap-inline" data-pagefind-ignore>
         <UButton v-if="previous" :to="previous.path" color="neutral" variant="outline" icon="i-lucide-arrow-left">{{ previous.worldTime.label }} · 上一事件</UButton>
         <UButton v-if="next" :to="next.path" color="neutral" variant="outline" trailing-icon="i-lucide-arrow-right">{{ next.worldTime.label }} · 下一事件</UButton>

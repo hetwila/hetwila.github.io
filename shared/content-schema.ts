@@ -7,19 +7,16 @@ export const routeKeySchema = z.string().min(1).max(100)
   .refine(value => value === value.trim() && value === value.normalize('NFC'), 'Use a trimmed NFC title')
   .refine(value => !['index', 'category'].includes(value.toLowerCase()), 'Reserved route')
 
-export const wikiSchema = z.object({
-  uid: z.string().regex(/^(wiki|event):[\p{L}\p{M}\p{N}·()-]+$/u),
+const commonSchema = z.object({
   routeKey: routeKeySchema,
   redirects: z.array(routeKeySchema).default([]),
   title: z.string().min(1),
   description: z.string().min(1),
   category: z.string().min(1),
-  entityType: z.enum(['concept', 'event']),
   aliases: z.array(z.string()).default([]),
   nameStatus: z.enum(['official', 'working', 'descriptive']).default('descriptive'),
   sourceIds: z.array(z.string()).default([]),
   factStatus: z.enum(['canon', 'open', 'working', 'story-local', 'deprecated']),
-  narrativeLayer: z.literal('author-reference'),
   publicationStatus: z.enum(['draft', 'review', 'published', 'withdrawn']),
   visibility: z.enum(['public', 'private']),
   settingVersion: z.literal('3.0.3'),
@@ -35,24 +32,42 @@ export const wikiSchema = z.object({
     role: z.enum(['primary', 'supporting']),
   })).min(1),
   relations: z.array(z.object({
-    type: z.enum(['concerns', 'mentions']),
+    type: z.enum(['concerns', 'mentions', 'depicts']),
     target: z.string(),
   })).default([]),
 })
 
-export type WikiMetadata = z.infer<typeof wikiSchema>
+export const wikiSchema = commonSchema.extend({
+  uid: z.string().regex(/^(wiki|event):[\p{L}\p{M}\p{N}·()-]+$/u),
+  entityType: z.enum(['concept', 'event', 'person', 'institution']),
+  narrativeLayer: z.literal('author-reference'),
+})
 
-export interface PublicDocument extends WikiMetadata {
+export const storySchema = commonSchema.extend({
+  uid: z.string().regex(/^story:[\p{L}\p{M}\p{N}·()-]+$/u),
+  entityType: z.literal('story'),
+  factStatus: z.literal('story-local'),
+  narrativeLayer: z.literal('fiction'),
+  scopeUid: z.string().startsWith('story:'),
+})
+
+export type WikiMetadata = z.infer<typeof wikiSchema>
+export type StoryMetadata = z.infer<typeof storySchema>
+export type ContentMetadata = WikiMetadata | StoryMetadata
+
+export type PublicDocument = ContentMetadata & {
   path: string
   bodyMarkdown: string
   markdownUrl: string
   jsonUrl: string
+  originalMarkdownUrl?: string
+  originalSha256?: string
 }
 
 export interface ContentRelation {
   source: string
   target: string
-  type: 'concerns' | 'mentions'
+  type: 'concerns' | 'mentions' | 'depicts'
   origin: 'metadata' | 'markdown'
   sourcePath: string
   targetPath: string

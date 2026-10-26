@@ -72,7 +72,7 @@ onBeforeUnmount(() => { clearTimeout(debounce); ++request })
 </script>
 
 <template>
-  <UModal v-model:open="open" title="搜索设定" description="检索已收录的百科条目，或通过历史编号定位事件。" :ui="{ content: 'sm:max-w-search', body: 'p-0 sm:p-0' }">
+  <UModal v-model:open="open" title="搜索设定" description="检索百科与故事，或通过历史编号定位事件。" :ui="{ content: 'sm:max-w-search', body: 'p-0 sm:p-0' }">
     <template #body>
       <div class="search-field"><UInput ref="input" v-model="query" autofocus size="xl" icon="i-lucide-search" placeholder="试试「禁制」或「H31-01」" aria-label="搜索关键词" class="w-full" /></div>
       <div class="search-results" aria-live="polite">
@@ -82,7 +82,7 @@ onBeforeUnmount(() => { clearTimeout(debounce); ++request })
         <p v-else-if="query.trim()" class="search-message">没有找到相关条目。试试其他关键词或事件编号。</p>
         <p v-else class="search-message">从一个名字、别名或历史编号开始。</p>
       </div>
-      <div class="search-bottom">检索 {{ catalog.length }} 个已收录条目。<span>ESC 关闭</span></div>
+      <div class="search-bottom">检索 {{ catalog.length }} 个已收录条目与故事。<span>ESC 关闭</span></div>
     </template>
   </UModal>
 </template>

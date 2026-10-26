@@ -21,9 +21,10 @@
 ## 内容与验证
 
 - 内容文件和 `routeKey` 使用中文标题，必要时用括号消歧，不另译英文。保留稳定 UID，改名通过 `redirects` 保留旧地址；避免路径大小写、Unicode 规范化和重定向冲突。Markdown 使用真实站内链接，由构建解析 AST 校验并生成反链。
-- `content/wiki/` 是编辑源；公开构建只允许 `published + public`。不要手改 `.generated/`、`public/data/` 或 `.output/`。
+- `content/wiki/` 与 `content/stories/` 是编辑源；公开构建只允许 `published + public`。不要手改 `.generated/`、`public/data/` 或 `.output/`。
 - `sources/releases/3.0.3/` 是来源证据，不随页面润色改动。保留 UID、来源锚点、纪年 0、事实状态与双向关联。新增来源通过 `sources/reading-map.json` 进入公开允许列表；禁止为补齐覆盖率猜写缺失资料。
-- 不添加虚构作品、帖子、读者或互动统计充当真实内容。完整内容迁移需先取得对应来源，Supabase 属于后续任务。
+- 故事保留作者原稿及哈希；阅读版只整理标题和链接，构建检查正文一致。以 `story-local`、`fiction` 与本篇 `scopeUid` 区别于百科事实；`depicts` 从故事指向事件，反链自动生成。人物百科标题使用原设定中的完整姓名，简称进入别名。
+- 不添加虚构作品、帖子、读者或互动统计充当真实内容。完整附件已保存于 `sources/archives/`；新增内容先解压并核对对应责任原文，Supabase 属于后续任务。
 - 按 README 执行适合改动的检查；前端完成后运行类型检查及 `pnpm test`。云环境使用 `bash scripts/cloud.sh` 包装 pnpm。
 - 静态生成与 Nuxt dev 不能并行，共用生成状态。只停止本任务启动的服务；测试自行占用 4173 端口，完成后恢复开发服务。
 - 不为低风险文档／样式修改添加照抄实现的测试。主题持久化、系统偏好、可访问性、内容一致性等可失效的行为应有集成验证。

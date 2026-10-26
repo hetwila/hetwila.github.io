@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 
 const routeFile = new URL('./.generated/routes.json', import.meta.url)
-const routes: string[] = existsSync(routeFile) ? JSON.parse(readFileSync(routeFile, 'utf8')) : ['/', '/wiki', '/timeline', '/reference']
+const routes: string[] = existsSync(routeFile) ? JSON.parse(readFileSync(routeFile, 'utf8')) : ['/', '/wiki', '/stories', '/timeline', '/reference']
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-24',

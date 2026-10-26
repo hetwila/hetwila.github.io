@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import catalog from '../../.generated/catalog.json'
+import allContent from '../../.generated/catalog.json'
 import { matchesEntry, factLabels } from '~/utils/content'
+
+const catalog = allContent.filter(entry => entry.entityType !== 'story')
 
 const props = defineProps<{ category?: string }>()
 const query = ref('')
@@ -29,6 +31,6 @@ const entries = computed(() => catalog.filter(entry => (!props.category || entry
       </li>
     </ul>
     <p v-if="!entries.length" class="py-section text-muted">没有匹配的条目。可以换一个名称或编号。</p>
-    <p class="mt-stack text-caption text-muted leading-copy">当前整理范围：禁制机制与 H31 的 12 个历史事件。更多主题将随来源资料的整理逐步收录。</p>
+    <p class="mt-stack text-caption text-muted leading-copy">当前整理范围：禁制机制、H31 历史，以及1747年选举相关的人物与制度。更多主题将随来源资料的整理逐步收录。</p>
   </main>
 </template>

@@ -103,6 +103,7 @@ Tailwind 生成 CSS 和 Nuxt UI 合并类名是两件事。自定义 `text-card`
 | 条目、分类目录与相关阅读 | `UPageGrid`、`UPageCard` |
 | 来源面板、状态、操作 | `UCard`、`UBadge`、`UButton` |
 | 搜索 | `UModal`、`UInput`；查询由 Pagefind 完成 |
+| 故事阅读布局 | `UPage`、`ContentRenderer` 与共用阅读宽度／正文 token，首页与书架复用 `UPageCard` |
 | 页面目录 | `UContentToc`，手机折叠、桌面滚动定位 |
 | 页脚及基础上下文 | `UFooter`、`UApp`，语言为 `zh_cn` |
 
@@ -112,6 +113,8 @@ Tailwind 生成 CSS 和 Nuxt UI 合并类名是两件事。自定义 `text-card`
 
 ## 验证
 
-`tests/browser/theme.spec.ts` 验证系统偏好、手动切换、刷新与路由保持、修改基础变量后颜色贯穿到组件和 SVG、手机菜单，以及两种模式下首页、代表性 Wiki、目录、年代、来源页和搜索弹窗的 axe 可访问性规则（包括可自动判断的文字对比度）。`tests/browser/tokens.spec.ts` 额外验证桌面／手机修改字号和间距基数后，Nuxt UI、Tailwind 与自定义 CSS 同步缩放；用途变量覆盖、颜色保留、弹窗和来源面板尺寸、减少动态效果偏好。原有内容、搜索、无 JS 阅读、HTTP 导出与深链接测试继续运行。
+`tests/browser/theme.spec.ts` 验证系统偏好、手动切换、刷新与路由保持、修改基础变量后颜色贯穿到组件和 SVG、手机菜单，以及两种模式下首页、代表性 Wiki、目录、年代、来源、故事书架／阅读页和搜索弹窗的 axe 可访问性规则（包括可自动判断的文字对比度）。`tests/browser/tokens.spec.ts` 额外验证桌面／手机修改字号和间距基数后，Nuxt UI、Tailwind 与自定义 CSS 同步缩放；用途变量覆盖、颜色保留、弹窗和来源面板尺寸、减少动态效果偏好。原有内容、搜索、无 JS 阅读、HTTP 导出与深链接测试继续运行。
 
 视觉验收还应检查桌面／手机截图、排版和焦点。axe 自动检查不能替代人工审查所有布局、渐变背景或任意用户自定义色板。
+
+故事页沿用 `article-header`、`article-prose` 和 `max-w-reading`，不另设硬编码颜色或字号。六节标题驱动 `UContentToc`；手机使用折叠目录，桌面使用侧栏。Wiki 与故事共用 `ContentSources` 面板，原稿校验信息放在原生 `details` 中；故事正文保持连续阅读，背景解释与机器下载入口放在正文之外。
