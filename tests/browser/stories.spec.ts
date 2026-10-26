@@ -50,7 +50,7 @@ test('the bookshelf, inline concepts, chapter anchors and story full-text search
 test('HTTP exports distinguish story-local prose, exact originals and objective setting relations', async ({ request }) => {
   const manifest = await (await request.get('/data/v1/manifest.json')).json()
   expect(manifest.storyCount).toBe(1)
-  expect(manifest.wikiCount).toBe(18)
+  expect(manifest.wikiCount).toBe(6)
   const catalog = await (await request.get(manifest.catalog)).json()
   const entry = catalog.find((item: { entityType: string }) => item.entityType === 'story')
   const story = await (await request.get(entry.jsonUrl)).json()

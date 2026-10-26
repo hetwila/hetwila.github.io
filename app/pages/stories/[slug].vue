@@ -1,31 +1,22 @@
 <script setup lang="ts">
 import catalog from '../../../.generated/catalog.json'
 import graph from '../../../.generated/relations.json'
+import events from '../../../.generated/events.json'
 
 const route = useRoute()
-const entry = computed(() => catalog.find(item => item.entityType === 'story' && (item.routeKey === route.params.slug || item.redirects.some(key => key === String(route.params.slug)))))
+const entry = computed(() => catalog.find(item => item.entityType === 'story' && item.routeKey === route.params.slug))
 if (!entry.value) throw createError({ statusCode: 404, statusMessage: 'Not Found', message: '未找到故事' })
 const { data: story } = await useAsyncData(() => `story-${entry.value?.uid}`, () => queryCollection('stories').where('routeKey', '=', entry.value!.routeKey).first())
 if (!story.value) throw createError({ statusCode: 404, statusMessage: 'Not Found', message: '未找到故事' })
-const legacy = computed(() => entry.value && route.params.slug !== entry.value.routeKey)
-onMounted(() => watch(() => route.fullPath, () => {
-  if (legacy.value) navigateTo({ path: entry.value!.path, hash: route.hash, query: route.query }, { replace: true })
-}, { immediate: true }))
-const related = computed(() => catalog.filter(item => item.entityType !== 'story' && graph.some(edge => edge.source === entry.value?.uid && edge.target === item.uid)))
-const depicted = computed(() => related.value.filter(item => graph.some(edge => edge.source === entry.value?.uid && edge.target === item.uid && edge.type === 'depicts')))
+const related = computed(() => catalog.filter(item => item.entityType !== 'story' && graph.some(edge => edge.source === entry.value?.uid && edge.targetArticleUid === item.uid)))
+const depicted = computed(() => events.filter(item => graph.some(edge => edge.source === entry.value?.uid && edge.target === item.uid && edge.type === 'depicts')))
 const toc = computed(() => [...(story.value?.body.toc?.links ?? []), { id: 'related-wiki', text: '相关百科', depth: 2 }, { id: 'source-heading', text: '背景依据与原稿', depth: 2 }])
-useSeoMeta({ title: () => story.value?.title, description: () => story.value?.description, robots: () => legacy.value ? 'noindex, follow' : 'index, follow' })
+useSeoMeta({ title: () => story.value?.title, description: () => story.value?.description })
 useHead(() => ({ link: [{ rel: 'canonical', href: `https://hetwila.github.io${entry.value!.path}` }] }))
 </script>
 
 <template>
-  <main v-if="legacy && entry" id="main" class="shell py-section">
-    <UPageCard class="max-w-reading mx-auto">
-      <template #title><h1>故事已更名</h1></template>
-      <UButton :to="entry.path" trailing-icon="i-lucide-arrow-right">{{ entry.title }}</UButton>
-    </UPageCard>
-  </main>
-  <main v-else-if="story && entry" id="main" class="shell py-page-block">
+  <main v-if="story && entry" id="main" class="shell py-page-block">
     <UButton to="/stories" color="neutral" variant="link" icon="i-lucide-arrow-left" class="mb-stack p-0 text-caption">返回故事书架</UButton>
     <UPage :ui="{ right: 'hidden lg:block' }">
       <article class="article-main mx-auto w-full max-w-reading" data-pagefind-body data-pagefind-filter="类型:故事">

@@ -2,7 +2,7 @@
 
 Nuxt 4 + Nuxt UI 4 + Nuxt Content 3 的静态档案网站，使用 Tailwind CSS 4 和分层设计系统。站点：<https://hetwila.github.io/>。
 
-目前包含首页、百科目录与分类、年代列表、18 个百科条目（禁制机制、H31 的全部 12 个事件及1747年选举相关人物与制度）、故事书架和首篇《第一次选择》、八份可阅读全文的来源资料、Pagefind 中文搜索，以及供 AI 直接读取的 Markdown／JSON 和关系、来源锚点映射。模拟论坛和 Supabase 尚未实施。
+目前包含首页、百科目录与分类、年代列表、6 个主题百科条目、故事书架和首篇《第一次选择》、十四份可阅读全文的来源资料、Pagefind 中文搜索，以及供 AI 直接读取的 Markdown／JSON 和关系、来源锚点映射。H31 的全部 12 个事件已整合进“禁制”正文，年代页仍保留这 12 个节点和1747年议长选举。模拟论坛和 Supabase 尚未实施。
 
 已支持系统／浅色／深色主题、手机导航、页面目录与键盘搜索。开发约定见 [AGENTS.md](AGENTS.md)，主题与组件契约见 [设计系统](docs/design-system.md)，完整产品规划见 [网站设计书](docs/网站设计书.md)。三份文档分别记录工作约定、实现规范和后续目标。
 
@@ -72,38 +72,44 @@ Playwright优先使用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`，或云环境已有的 
 
 现有上游依赖还有 `unctx` 对 `oxc-parser`／`unplugin` 的可选peer范围提示，以及开发启动时MDC预优化条目提示。它们来自已锁定的Nuxt／Content依赖组合；没有通过忽略类型错误或禁用包校验来掩盖问题。后续升级时需同时复核构建和开发浏览器行为。
 
-## 中文标题、链接与扩充内容
+## 百科组织、中文标题与链接
+
+百科标题采用名词或名词短语，按读者需要理解的主题组织。普通事件写入相关概念、机构、地点或人物的正文；有独立背景、过程和影响、值得集中解释的重大事件才独立成篇，例如“1747年议长选举”。原资料的 H 编号是历史检索坐标，不等于每个编号都需要一篇百科。
+
+人物条目先回答“她是谁、是怎样的人”，再介绍经历。诺菲莉亚页依次介绍身份与姓名、性格与价值观、兴趣与日常、家庭关系、外貌、生平；选举属于公共职责经历的一部分。摘要和首页人物卡片同样以身份与性格为主，现代状态与早年经历分别交代。
 
 内容文件名保留中文，例如 `content/wiki/禁制.md`；`routeKey: 禁制` 对应 `/wiki/禁制`。标题需要消歧时使用“名称（限定词）”，不为技术路径另造英文译名。路径保存 NFC Unicode，URL 编码由浏览器／HTTP 客户端处理。框架生成的英文页面组件文件名不等于内容标题。
 
 - `uid` 是长期身份。原 `wiki:ban`、`event:h31-01` 保留，历史事件继续使用原 H 编号。
-- 改名时同步文件名与 `routeKey`，把旧 key 加入 `redirects`。`/wiki/ban` 与 `/wiki/h31-01` 已保留静态迁移页、canonical、新地址链接；有 JS 时会跳转并保留查询参数与片段。GitHub Pages 上没有声称返回 301。
-- `aliases` 是搜索别名，`redirects` 是实际旧地址；两者分开维护。同一内容库内，文件、正式路径与旧地址必须唯一；UID 在两个库中共同校验。
+- 改名时同步文件名、`routeKey` 和站内链接；合并时移除原内容文件与旧地址，不生成迁移页。`/wiki/ban`、`/wiki/h31-01` 和原 H31 独立条目路径已移除。
+- `aliases` 是搜索别名，不生成额外页面。同一内容库内的正式路径必须唯一；文章与段落事件的 UID 共同校验。
+- 段落事件在所属百科 frontmatter 的 `events` 数组中维护 `uid`、`title`、`description`、`aliases`、`sourceIds`、`sourceRefs`、`worldTime`、`anchor`。正文用 `<span id="h31-01"></span>` 等明确锚点定位；构建校验锚点存在。无需为事件另建 Markdown 文件。
 - 百科与故事正文使用标准 Markdown 链接，如 `[禁制](/wiki/禁制#原理与作用边界)`。构建用 remark AST 提取链接与章节坐标，检查公开目标和锚点，并自动生成反链；有特定语义的关系仍在 `relations` 中维护。
 - 新增条目必须指定已核验的 `sourceRefs`，保留原事实状态、纪年、名称性质与来源编号。新增来源在 `sources/reading-map.json` 显式登记，并由发布清单的 SHA-256 校验后进入可读原文页。
-- `/wiki` 和 `/wiki/category/<分类名>` 提供完整静态目录；目录筛选可按名称、别名、编号缩小范围。`/timeline` 按有效数字年份排序，保留年 0。
+- `/wiki` 和 `/wiki/category/<分类名>` 只列独立条目；按段落事件编号筛选时显示所属条目。`/timeline` 合并独立事件和段落事件，按有效数字年份排序，保留年 0；全站精确搜索编号或事件名会直接定位正文段落。
 
 ## 故事收录与百科互链
 
 - `/stories` 为故事书架，`/stories/第一次选择` 为完整阅读页；六节目录、正文概念链接、相关百科、原稿下载均支持静态 HTML 阅读。首页、主导航和全站 Pagefind 搜索可发现作品。
 - `content/stories/第一次选择.md` 是阅读版，仅增加 frontmatter、章节标题和显式 Markdown 链接。`sources/stories/第一次选择.md` 保存作者原稿原字节，`manifest.json` 记录 SHA-256。构建核对原稿哈希，并用 Markdown AST 比较两版的正文文字；原稿变化或意外改写都会报错。
 - 故事使用 `entityType: story`、`narrativeLayer: fiction`、`factStatus: story-local`、`scopeUid: <本篇 uid>`。历史背景的 `sourceRefs` 不会把情节或对白变成全局设定。
-- 只维护故事到事件的 `depicts` 关系和正文链接。构建自动生成 Wiki 的“相关故事”，以及故事的“相关百科”；`depicts` 只允许从故事指向事件。普通提及保留章节坐标，不推导更强的历史事实。
+- 维护故事到事件的 `depicts` 关系和正文链接。构建自动生成 Wiki 的“相关故事”，以及故事的“相关百科”；`depicts` 只允许从故事指向事件，也支持正文内的段落事件。关系的 `target` 保留事件 UID，`targetArticleUid` 表示所属条目，`targetPath` 给出阅读落点；反链按所属条目聚合。普通提及保留章节坐标，不推导更强的历史事实。
 - 新增故事时同时保存原稿及校验值，创建中文阅读版并登记背景资料与关系。原稿首行须为标题（支持一级 Markdown 标题）；不要自动改写作者文字。未发表／私密故事与百科一样排除在公开集合外。
 - 目录与 JSON 记录内容类型；故事 JSON 还给出 `originalMarkdownUrl` 和 `originalSha256`，供 AI 核对原稿。`manifest.json` 的 `documentCount` 为百科与故事合计，另有 `wikiCount`、`storyCount`。
 
 ## 内容与机器读取
 
 - 编辑源：`content/wiki/` 与 `content/stories/`。每篇文件的 `routeKey` 与文件名一致。
-- 来源：`sources/releases/3.0.3/` 保存八份已引用的原始文档和 SHA-256，原文件保持不变；`sources/reading-map.json` 指定可公开原文的中文阅读路径。
+- 来源：`sources/releases/3.0.3/` 保存十四份已引用的原始文档和 SHA-256，原文件保持不变；`sources/reading-map.json` 指定可公开原文的中文阅读路径。
 - 结构：`shared/content-schema.ts`，包括UID、事实状态、世界纪年、来源和关系。
 - 准备：`scripts/prepare-content.ts` 核对来源哈希／锚点和链接／身份，只将 `published + public` 百科／故事及允许公开的来源生成到 `.generated/content/`，由 Nuxt Content 读取；显式 path 保留中文标题，避免框架自动 slug 化。
-- 对外入口：`/llms.txt`、`/data/v1/manifest.json`。清单指向内容哈希版本中的 Markdown、JSON、目录、正向／反向关系、来源原文及 106 个原始锚点的阅读映射。机器导出的正文文件也使用中文名；HTTP 地址按标准 URL 编码。
+- 对外入口：`/llms.txt`、`/data/v1/manifest.json`。清单指向内容哈希版本中的 Markdown、JSON、目录、正向／反向关系、来源原文及 151 个原始锚点的阅读映射。机器导出的正文文件也使用中文名；HTTP 地址按标准 URL 编码。
+- 清单的 `events` 指向 `events.json`，包含独立及段落事件的 UID、来源、年份、所属 `articleUid`、带锚点的 `path` 与 `embedded` 标志。`eventCount` 统计事件节点；`documentCount` 仅统计独立百科与故事，不把段落重复计为文章。
 - 框架生成的数据库／payload同样只包含这份公开集合。私密内容不能仅靠页面过滤隐藏，也不要提交到公开Git仓库。
 
 Markdown原文与JSON正文来自同一个源文件；`worldTime.year: 0` 保持数字0，不转为公历。原文内部链接使用实际可访问的站内URL，关系由UID解析。页面的来源面板保留附件路径及锚点，供核对。
 
-当前覆盖 **18 个百科条目、1 篇故事、8 / 216 份设定来源、106 / 1,855 个原始锚点、13 / 546 个 H 事件条目**，不是完整设定库。重新上传的完整 ZIP 已核对原 SHA-256 并保存于 `sources/archives/赫特维拉统合设定_3.0.3.zip`，后续可从仓库恢复来源；保存附件不代表全文已整理或公开到网站。来源页面中的未收录引用显示原路径，原始 Markdown 下载保留原字节；不把这些缺失材料算作已迁移。
+当前覆盖 **6 个百科条目、1 篇故事、14 / 216 份设定来源、151 / 1,855 个原始锚点、13 / 546 个 H 事件节点**，不是完整设定库。重新上传的完整 ZIP 已核对原 SHA-256 并保存于 `sources/archives/赫特维拉统合设定_3.0.3.zip`，后续可从仓库恢复来源；保存附件不代表全文已整理或公开到网站。来源页面中的未收录引用显示原路径，原始 Markdown 下载保留原字节；不把这些缺失材料算作已迁移。
 
 每次准备时重建公开导出，仅保留当前发布；历史机器版本长期归档和全库迁移仍待实施。搜索精确匹配标题、别名、H 编号优先，再合并 Pagefind 全文结果并去重；支持全半角及拉丁字母大小写规范化。开发模式的全文部分使用公开文档字串检索，正式验收以生成产物为准。
 
@@ -111,7 +117,7 @@ Markdown原文与JSON正文来自同一个源文件；`worldTime.year: 0` 保持
 
 站点地址：<https://hetwila.github.io/>。发布状态以 [Pages 工作流](https://github.com/hetwila/hetwila.github.io/actions/workflows/pages.yml) 为准。
 
-推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容／来源／链接测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、全部中文百科／故事／来源深链接、旧地址入口和机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
+推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容／来源／链接测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、全部中文百科／故事／来源深链接、事件段落锚点和机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
 
 当前仓库的 Pages 来源已由管理员设置为 **GitHub Actions**（**Settings → Pages → Build and deployment → Source**）。工作流核对该设置，并通过 GitHub 自带的 `GITHUB_TOKEN` 与 OIDC 发布，不需要额外配置部署密钥。构建任务只读仓库，部署任务单独获得 Pages 写入权限；Actions 版本固定到提交 SHA。若在新仓库复用本工作流，需先启用 Pages 并选择 GitHub Actions 来源；自动切换被 GitHub 拒绝时会明确报告权限警告。
 

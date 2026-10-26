@@ -1,8 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import matter from 'gray-matter'
-import { wikiSchema, storySchema, type ContentMetadata } from '../../shared/content-schema.ts'
-import type { ContentRelation } from '../../shared/content-schema.ts'
+import { wikiSchema, storySchema, type ContentMetadata, type EventRecord, type ContentRelation } from '../../shared/content-schema.ts'
 import { analyzeMarkdown } from './markdown.ts'
 
 export interface SourceDocument {
@@ -12,8 +11,24 @@ export interface SourceDocument {
   filename: string
 }
 
-export function documentPath(metadata: ContentMetadata, key = metadata.routeKey) {
-  return `/${metadata.entityType === 'story' ? 'stories' : 'wiki'}/${key}`
+export function documentPath(metadata: ContentMetadata) {
+  return `/${metadata.entityType === 'story' ? 'stories' : 'wiki'}/${metadata.routeKey}`
+}
+
+export function collectEvents(documents: SourceDocument[]): EventRecord[] {
+  return documents.flatMap(({ metadata }) => {
+    if (metadata.entityType === 'story') return []
+    const events: EventRecord[] = metadata.events.map(({ anchor, ...event }) => ({
+      ...event, articleUid: metadata.uid, path: `${documentPath(metadata)}#${anchor}`, embedded: true,
+    }))
+    if (metadata.entityType === 'event' && metadata.worldTime.year !== undefined) events.push({
+      uid: metadata.uid, title: metadata.title, description: metadata.description, aliases: metadata.aliases,
+      sourceIds: metadata.sourceIds, sourceRefs: metadata.sourceRefs,
+      worldTime: { label: metadata.worldTime.label, precision: 'year', year: metadata.worldTime.year },
+      articleUid: metadata.uid, path: documentPath(metadata), embedded: false,
+    })
+    return events
+  }).sort((a, b) => a.worldTime.year - b.worldTime.year)
 }
 
 export async function readPublicContent(directories: string | { wiki: string, stories: string }): Promise<SourceDocument[]> {
@@ -28,23 +43,29 @@ export async function readPublicContent(directories: string | { wiki: string, st
       const metadata = (kind === 'stories' ? storySchema : wikiSchema).parse(data)
       if (metadata.entityType === 'story' && metadata.scopeUid !== metadata.uid) throw new Error(`Story scope must match uid: ${metadata.uid}`)
       if (filename !== `${metadata.routeKey}.md`) throw new Error(`Filename must match routeKey: ${filename}`)
-      if (uids.has(metadata.uid)) throw new Error(`Duplicate uid: ${metadata.uid}`)
-      uids.add(metadata.uid)
-      for (const key of [metadata.routeKey, ...metadata.redirects]) {
-        const normalized = documentPath(metadata, key).normalize('NFC').toLowerCase()
-        if (routes.has(normalized)) throw new Error(`Duplicate route or redirect: ${key}`)
-        routes.add(normalized)
+      const events = metadata.entityType === 'story' ? [] : metadata.events
+      for (const uid of [metadata.uid, ...events.map(event => event.uid)]) {
+        if (uids.has(uid)) throw new Error(`Duplicate uid: ${uid}`)
+        uids.add(uid)
       }
+      const normalized = documentPath(metadata).normalize('NFC').toLowerCase()
+      if (routes.has(normalized)) throw new Error(`Duplicate route: ${metadata.routeKey}`)
+      routes.add(normalized)
       if (metadata.publicationStatus !== 'published' || metadata.visibility !== 'public') continue
+      const analysis = analyzeMarkdown(content)
+      const anchors = new Set<string>()
+      for (const event of events) {
+        if (!analysis.explicitAnchors.has(event.anchor)) throw new Error(`Missing embedded event anchor: ${event.uid}#${event.anchor}`)
+        if (anchors.has(event.anchor)) throw new Error(`Duplicate event anchor: ${event.anchor}`)
+        anchors.add(event.anchor)
+      }
       result.push({ metadata, markdown: content.trim(), raw, filename })
     }
   }
-  const publishedUids = new Set(result.map(doc => doc.metadata.uid))
+  const publishedUids = new Set([...result.map(doc => doc.metadata.uid), ...collectEvents(result).map(event => event.uid)])
   for (const doc of result) {
     for (const relation of doc.metadata.relations) {
-      if (!publishedUids.has(relation.target)) {
-        throw new Error(`Unpublished or missing relation: ${doc.metadata.uid} → ${relation.target}`)
-      }
+      if (!publishedUids.has(relation.target)) throw new Error(`Unpublished or missing relation: ${doc.metadata.uid} → ${relation.target}`)
     }
   }
   return result
@@ -52,8 +73,9 @@ export async function readPublicContent(directories: string | { wiki: string, st
 
 export function buildContentGraph(documents: SourceDocument[], extraPages: Map<string, Set<string>> = new Map()) {
   const paths = new Map(documents.map(doc => [documentPath(doc.metadata), doc]))
-  const ids = new Map(documents.map(doc => [doc.metadata.uid, doc]))
-  const aliases = new Map(documents.flatMap(doc => doc.metadata.redirects.map(key => [documentPath(doc.metadata, key), doc] as const)))
+  const targets = new Map(documents.map(doc => [doc.metadata.uid, { uid: doc.metadata.uid, articleUid: doc.metadata.uid, entityType: doc.metadata.entityType, path: documentPath(doc.metadata) }]))
+  for (const event of collectEvents(documents)) targets.set(event.uid, { ...event, entityType: 'event' })
+  const eventsByPath = new Map([...targets.values()].filter(target => target.path.includes('#')).map(target => [target.path, target]))
   const analyses = new Map(documents.map(doc => [doc.metadata.uid, analyzeMarkdown(doc.markdown)]))
   const edges: ContentRelation[] = []
   const seen = new Set<string>()
@@ -64,22 +86,23 @@ export function buildContentGraph(documents: SourceDocument[], extraPages: Map<s
   for (const doc of documents) {
     const sourcePath = documentPath(doc.metadata)
     for (const relation of doc.metadata.relations) {
-      const target = ids.get(relation.target)
+      const target = targets.get(relation.target)
       if (!target) throw new Error(`Unpublished or missing relation: ${relation.target}`)
-      if (relation.type === 'depicts' && (doc.metadata.entityType !== 'story' || target.metadata.entityType !== 'event')) throw new Error('depicts must link a story to an event')
-      add({ source: doc.metadata.uid, ...relation, sourcePath, targetPath: documentPath(target.metadata), origin: 'metadata' })
+      if (relation.type === 'depicts' && (doc.metadata.entityType !== 'story' || target.entityType !== 'event')) throw new Error('depicts must link a story to an event')
+      add({ source: doc.metadata.uid, ...relation, sourcePath, targetPath: target.path, targetArticleUid: target.articleUid, origin: 'metadata' })
     }
     for (const link of analyses.get(doc.metadata.uid)!.links) {
       const url = new URL(link.url, `https://hetwila.github.io${sourcePath}`)
       if (url.origin !== 'https://hetwila.github.io') continue
       const path = decodeURIComponent(url.pathname).replace(/\/$/, '')
       const anchor = decodeURIComponent(url.hash.slice(1))
-      const target = paths.get(path) ?? aliases.get(path)
-      const anchors = target ? analyses.get(target.metadata.uid)!.anchors : extraPages.get(path)
+      const page = paths.get(path)
+      const anchors = page ? analyses.get(page.metadata.uid)!.anchors : extraPages.get(path)
       if (!anchors) throw new Error(`Unpublished or missing link: ${sourcePath} → ${link.url}`)
       if (anchor && !anchors.has(anchor)) throw new Error(`Missing anchor: ${sourcePath} → ${link.url}`)
-      if (target && target.metadata.uid !== doc.metadata.uid) {
-        add({ source: doc.metadata.uid, target: target.metadata.uid, type: 'mentions', origin: 'markdown', sourcePath, targetPath: documentPath(target.metadata), sectionId: link.sectionId })
+      const target = eventsByPath.get(`${path}#${anchor}`) ?? (page && targets.get(page.metadata.uid))
+      if (target && target.uid !== doc.metadata.uid) {
+        add({ source: doc.metadata.uid, target: target.uid, type: 'mentions', origin: 'markdown', sourcePath, targetPath: target.path, targetArticleUid: target.articleUid, sectionId: link.sectionId })
       }
     }
   }

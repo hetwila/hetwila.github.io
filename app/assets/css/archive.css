@@ -72,6 +72,7 @@
 .search-bottom { border-top: var(--ds-border-width) solid var(--ui-border); font-size: var(--ds-text-meta); color: var(--ui-text-muted); padding: calc(var(--spacing) * 4) calc(var(--spacing) * 6); display: flex; justify-content: space-between; }
 
 @variant max-lg {
+  .article-prose [id] { scroll-margin-top: var(--ds-toc-anchor-offset); }
   .article-layout { grid-template-columns: var(--ds-nav-width) minmax(0, 1fr); }
   .article-toc { display: none; }
 }

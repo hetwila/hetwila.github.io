@@ -6,7 +6,7 @@ useSeoMeta({
 })
 const wikiCount = catalog.filter(entry => entry.entityType !== 'story').length
 const featuredStory = catalog.find(entry => entry.entityType === 'story')
-const entries = ['wiki:ban', 'event:h31-01'].map(uid => catalog.find(entry => entry.uid === uid)!)
+const entries = ['wiki:ban', 'wiki:诺菲莉亚'].map(uid => catalog.find(entry => entry.uid === uid)!)
 </script>
 
 <template>
@@ -32,7 +32,7 @@ const entries = ['wiki:ban', 'event:h31-01'].map(uid => catalog.find(entry => en
     <section class="reading-path" aria-label="推荐阅读路线">
       <div class="path-label"><UIcon name="i-lucide-route" /><span>第一次来？<small>沿着一条线索阅读</small></span></div>
       <NuxtLink to="/wiki/禁制"><span class="step-no">01</span><span>理解一个概念<small>禁制如何运作</small></span><UIcon name="i-lucide-arrow-right" /></NuxtLink>
-      <NuxtLink to="/wiki/南港公共禁制启用"><span class="step-no">02</span><span>看见一次转折<small>公共空间获得保护</small></span><UIcon name="i-lucide-arrow-right" /></NuxtLink>
+      <NuxtLink to="/wiki/诺菲莉亚·薇尔希·伊拉奈德"><span class="step-no">02</span><span>认识一位人物<small>诺菲莉亚的性格与生活</small></span><UIcon name="i-lucide-arrow-right" /></NuxtLink>
     </section>
 
     <section id="entries" class="pt-section" aria-labelledby="entries-title">
@@ -44,13 +44,13 @@ const entries = ['wiki:ban', 'event:h31-01'].map(uid => catalog.find(entry => en
         <UPageCard v-for="entry in entries" :key="entry.uid" :title="entry.title" :description="entry.description" :to="entry.path" :aria-label="entry.title" class="entry-card">
           <template #header>
             <div class="flex items-center gap-inline text-caption text-muted">
-              <span class="entry-icon"><UIcon :name="entry.entityType === 'event' ? 'i-lucide-history' : 'i-lucide-orbit'" class="size-icon" /></span>
+              <span class="entry-icon"><UIcon :name="entry.entityType === 'person' ? 'i-lucide-user-round' : 'i-lucide-orbit'" class="size-icon" /></span>
               <span>{{ entry.category }}</span>
               <UIcon name="i-lucide-arrow-up-right" class="ms-auto size-icon text-dimmed" />
             </div>
           </template>
           <template #title>
-            <p class="mb-2 font-sans text-label font-medium tracking-wider text-muted">{{ entry.entityType === 'event' ? 'H31-01 · 0年' : 'CONCEPT · 世界原理' }}</p>
+            <p class="mb-2 font-sans text-label font-medium tracking-wider text-muted">{{ entry.entityType === 'person' ? 'PERSON · 人物' : 'CONCEPT · 世界原理' }}</p>
             <h3>{{ entry.title }}</h3>
           </template>
           <template #footer>

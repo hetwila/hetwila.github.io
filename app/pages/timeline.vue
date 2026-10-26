@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import catalog from '../../.generated/catalog.json'
-const events = catalog.filter(entry => entry.entityType === 'event' && entry.worldTime.year !== undefined).sort((a, b) => a.worldTime.year! - b.worldTime.year!)
+import events from '../../.generated/events.json'
 useSeoMeta({ title: '年代', description: '沿着世界纪年阅读公共禁制初期与1747年议长选举。' })
 </script>
 
@@ -8,7 +7,7 @@ useSeoMeta({ title: '年代', description: '沿着世界纪年阅读公共禁制
   <main id="main" class="shell py-section">
     <p class="eyebrow mb-3">HISTORY OF HETWILA</p>
     <h1 class="section-title">沿着年代，阅读世界的变化</h1>
-    <p class="mt-4 max-w-reading text-muted leading-copy">从公共禁制启用，到1747年的首次议长直选。这里按年代串起已经整理的历史片段，逐步补充更多时期。</p>
+    <p class="mt-4 max-w-reading text-muted leading-copy">从公共禁制启用，到1747年的首次议长直选。这里按年代串起已经整理的历史片段，链接通往百科中的相关段落或专题条目。</p>
     <div class="my-stack flex flex-wrap gap-inline"><UBadge color="neutral" variant="outline">世界纪年 · 含0年</UBadge><UBadge color="neutral" variant="outline">{{ events.length }} 个事件</UBadge><UButton to="/reference/公共禁制纪元初期（H31）" variant="link" icon="i-lucide-book-open">阅读 H31 原文</UButton><UButton to="/reference/现代政治框架与共同保障（H48）" variant="link" icon="i-lucide-book-open">阅读 H48 原文</UButton></div>
     <ol aria-label="年代事件" class="max-w-reading space-y-stack">
       <li v-for="entry in events" :key="entry.uid" class="border-s border-accented ps-panel">

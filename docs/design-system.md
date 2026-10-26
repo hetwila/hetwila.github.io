@@ -60,6 +60,7 @@
 | `--ds-space-page-block`、`--ds-page-gutter` | `my-page-block`、`py-page-block`、`px-gutter` | 页首／页尾节奏和页面横向留白 |
 | `--ds-control-size`、`--ds-icon-size` | `min-h-control`、`min-w-control`、`size-icon` | 页头控件、内容图标 |
 | `--ds-page-width/reading-width/dialog-width` | `max-w-page`、`max-w-reading`、`max-w-search` | 页面容器、阅读栏、搜索弹窗 |
+| `--ds-toc-anchor-offset` | 正文锚点的 `scroll-margin-top` | 小屏跳到章节或事件段落时，为悬浮目录留出空间；与页面的头部滚动留白叠加 |
 | `--ds-radius-card/hero`、`--ds-shadow-card` | `rounded-card`、`rounded-hero`、`shadow-card` | 卡片、横幅的形状和抬升效果 |
 | `--ds-duration-fast/normal` | `duration-fast`、`duration-normal` | 可复用的过渡时长 |
 

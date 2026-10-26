@@ -9,7 +9,6 @@ export const routeKeySchema = z.string().min(1).max(100)
 
 const commonSchema = z.object({
   routeKey: routeKeySchema,
-  redirects: z.array(routeKeySchema).default([]),
   title: z.string().min(1),
   description: z.string().min(1),
   category: z.string().min(1),
@@ -37,10 +36,22 @@ const commonSchema = z.object({
   })).default([]),
 })
 
+export const embeddedEventSchema = z.object({
+  uid: z.string().regex(/^event:[\p{L}\p{M}\p{N}·()-]+$/u),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  anchor: z.string().regex(/^[\p{L}\p{N}][\p{L}\p{N}_-]*$/u),
+  aliases: z.array(z.string()).default([]),
+  sourceIds: z.array(z.string()).min(1),
+  sourceRefs: commonSchema.shape.sourceRefs,
+  worldTime: z.object({ label: z.string(), precision: z.literal('year'), year: z.number().int() }),
+})
+
 export const wikiSchema = commonSchema.extend({
   uid: z.string().regex(/^(wiki|event):[\p{L}\p{M}\p{N}·()-]+$/u),
   entityType: z.enum(['concept', 'event', 'person', 'institution']),
   narrativeLayer: z.literal('author-reference'),
+  events: z.array(embeddedEventSchema).default([]),
 })
 
 export const storySchema = commonSchema.extend({
@@ -54,6 +65,12 @@ export const storySchema = commonSchema.extend({
 export type WikiMetadata = z.infer<typeof wikiSchema>
 export type StoryMetadata = z.infer<typeof storySchema>
 export type ContentMetadata = WikiMetadata | StoryMetadata
+
+export type EventRecord = Omit<z.infer<typeof embeddedEventSchema>, 'anchor'> & {
+  articleUid: string
+  path: string
+  embedded: boolean
+}
 
 export type PublicDocument = ContentMetadata & {
   path: string
@@ -71,5 +88,6 @@ export interface ContentRelation {
   origin: 'metadata' | 'markdown'
   sourcePath: string
   targetPath: string
+  targetArticleUid: string
   sectionId?: string
 }

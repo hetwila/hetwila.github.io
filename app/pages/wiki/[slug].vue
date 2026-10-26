@@ -1,40 +1,29 @@
 <script setup lang="ts">
 import catalog from '../../../.generated/catalog.json'
 import graph from '../../../.generated/relations.json'
+import events from '../../../.generated/events.json'
 import { factLabels } from '~/utils/content'
 
 const route = useRoute()
-const entry = computed(() => catalog.find(item => item.entityType !== 'story' && (item.routeKey === route.params.slug || item.redirects.some(key => key === String(route.params.slug)))))
+const entry = computed(() => catalog.find(item => item.entityType !== 'story' && item.routeKey === route.params.slug))
 if (!entry.value) throw createError({ statusCode: 404, statusMessage: 'Not Found', message: '未找到条目' })
 const { data: article } = await useAsyncData(() => `wiki-${entry.value?.uid}`, () => queryCollection('wiki').where('routeKey', '=', entry.value!.routeKey).first())
 if (!article.value) throw createError({ statusCode: 404, statusMessage: 'Not Found', message: '未找到条目' })
 const exported = entry
-const legacy = computed(() => entry.value && route.params.slug !== entry.value.routeKey)
-onMounted(() => watch(() => route.fullPath, () => {
-  if (legacy.value) navigateTo({ path: entry.value!.path, hash: route.hash, query: route.query }, { replace: true })
-}, { immediate: true }))
-const related = computed(() => catalog.filter(item => item.entityType !== 'story' && graph.some(edge => edge.source === entry.value?.uid && edge.target === item.uid)))
-const backlinks = computed(() => catalog.filter(item => item.entityType !== 'story' && graph.some(edge => edge.target === entry.value?.uid && edge.source === item.uid)))
+const related = computed(() => catalog.filter(item => item.entityType !== 'story' && graph.some(edge => edge.source === entry.value?.uid && edge.targetArticleUid === item.uid)))
+const backlinks = computed(() => catalog.filter(item => item.entityType !== 'story' && graph.some(edge => edge.targetArticleUid === entry.value?.uid && edge.source === item.uid)))
 const navigation = computed(() => [...new Set(catalog.filter(item => item.entityType !== 'story').map(item => item.category))].map(category => ({ label: category, to: `/wiki/category/${category}`, icon: category === '历史与变革' ? 'i-lucide-history' : 'i-lucide-orbit' })))
-const events = catalog.filter(item => item.entityType === 'event' && item.worldTime.year !== undefined).sort((a, b) => a.worldTime.year! - b.worldTime.year!)
 const eventIndex = computed(() => events.findIndex(item => item.uid === entry.value?.uid))
 const previous = computed(() => eventIndex.value > 0 ? events[eventIndex.value - 1] : undefined)
 const next = computed(() => eventIndex.value >= 0 ? events[eventIndex.value + 1] : undefined)
-const relatedStories = computed(() => catalog.filter(item => item.entityType === 'story' && graph.some(edge => edge.source === item.uid && edge.target === entry.value?.uid)))
+const relatedStories = computed(() => catalog.filter(item => item.entityType === 'story' && graph.some(edge => edge.source === item.uid && edge.targetArticleUid === entry.value?.uid)))
 const toc = computed(() => [...(article.value?.body.toc?.links ?? []), { id: 'source-heading', text: '来源与引用', depth: 2 }, ...(relatedStories.value.length ? [{ id: 'related-stories', text: '相关故事', depth: 2 }] : []), ...(backlinks.value.length ? [{ id: 'backlinks-heading', text: '链入本页', depth: 2 }] : [])])
-useSeoMeta({ title: () => article.value?.title, description: () => article.value?.description, robots: () => legacy.value ? 'noindex, follow' : 'index, follow' })
+useSeoMeta({ title: () => article.value?.title, description: () => article.value?.description })
 useHead(() => ({ link: [{ rel: 'canonical', href: `https://hetwila.github.io${entry.value!.path}` }] }))
 </script>
 
 <template>
-  <main v-if="legacy && entry" id="main" class="shell py-section">
-    <UPageCard title="条目已更名" :description="`请前往中文标题页面：${entry.title}。`" class="max-w-reading mx-auto">
-      <template #title><h1>条目已更名</h1></template>
-      <UButton :to="entry.path" trailing-icon="i-lucide-arrow-right">{{ entry.title }}</UButton>
-      <p class="text-caption text-muted">旧地址仍保留此阅读入口。</p>
-    </UPageCard>
-  </main>
-  <main v-else-if="article" id="main" class="shell article-layout">
+  <main v-if="article" id="main" class="shell article-layout">
     <aside class="article-sidebar" aria-label="百科导航">
       <UButton to="/wiki" color="neutral" variant="link" icon="i-lucide-arrow-left" class="p-0 text-caption">返回百科</UButton>
       <div class="sidebar-content mt-9">

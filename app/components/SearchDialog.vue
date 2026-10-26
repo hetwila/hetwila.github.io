@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PublicDocument } from '../../shared/content-schema'
 import catalog from '../../.generated/catalog.json'
+import events from '../../.generated/events.json'
 import { normalizeQuery } from '~/utils/content'
 
 const open = defineModel<boolean>('open', { default: false })
@@ -42,7 +43,7 @@ async function search() {
     }
     // Exact names, aliases and source IDs precede full-text matches. This
     // keeps a responsible definition discoverable as the archive grows.
-    const exact = catalog.filter(doc => [doc.title, ...doc.aliases, ...doc.sourceIds].some(value => normalizeQuery(value) === term))
+    const exact = [...events, ...catalog].filter(doc => [doc.title, ...doc.aliases, ...doc.sourceIds].some(value => normalizeQuery(value) === term))
       .map(doc => ({ title: doc.title, url: doc.path, excerpt: doc.description }))
     const seen = new Set<string>()
     const combined = [...exact, ...found].filter(item => {

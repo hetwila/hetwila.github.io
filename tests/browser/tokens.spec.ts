@@ -77,5 +77,6 @@ test('purpose tokens override UI defaults without losing text colors or changing
   await expect(page.locator('.sources-panel [data-slot="body"]')).toHaveCSS('padding', '36px')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy()
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await expect(page.locator('.related-card')).toHaveCSS('transition-duration', '0s')
+  await page.goto('/wiki/诺菲莉亚·薇尔希·伊拉奈德')
+  await expect(page.locator('.related-card').first()).toHaveCSS('transition-duration', '0s')
 })

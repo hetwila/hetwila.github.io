@@ -4,21 +4,21 @@ import { mkdtemp, rm, readFile, writeFile, cp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import matter from 'gray-matter'
-import { readPublicContent, buildContentGraph } from '../scripts/lib/content.ts'
+import { readPublicContent, buildContentGraph, collectEvents } from '../scripts/lib/content.ts'
 import { wikiSchema } from '../shared/content-schema.ts'
 import { storySchema } from '../shared/content-schema.ts'
 import { readStoryOriginals } from '../scripts/lib/stories.ts'
 import { createHash } from 'node:crypto'
 import { readSources } from '../scripts/lib/sources.ts'
 
-const baseline = matter(await readFile(new URL('../content/wiki/禁制.md', import.meta.url), 'utf8')).data
+const baseline = { ...matter(await readFile(new URL('../content/wiki/禁制.md', import.meta.url), 'utf8')).data, events: [] }
 
 async function fixture(files: Record<string, Record<string, unknown>>, action: (dir: string) => Promise<void>) {
   const directory = await mkdtemp(join(tmpdir(), 'hetwila-content-'))
   try {
     for (const [name, metadata] of Object.entries(files)) {
       const { bodyMarkdown = 'Fixture body.', ...fields } = metadata
-      await writeFile(join(directory, `${name}.md`), matter.stringify(String(bodyMarkdown), { ...baseline, routeKey: name, uid: `wiki:${name}`, relations: [], redirects: [], ...fields }))
+      await writeFile(join(directory, `${name}.md`), matter.stringify(String(bodyMarkdown), { ...baseline, routeKey: name, uid: `wiki:${name}`, relations: [], ...fields }))
     }
     await action(directory)
   } finally { await rm(directory, { recursive: true, force: true }) }
@@ -45,10 +45,12 @@ test('duplicate stable identities are rejected even with different routes', asyn
 
 test('real sample event retains year zero and its source attribution', async () => {
   const docs = await readPublicContent(new URL('../content/wiki', import.meta.url).pathname)
-  const event = docs.find(doc => doc.metadata.uid === 'event:h31-01')!
-  assert.equal(event.metadata.worldTime.year, 0)
-  assert.equal(event.metadata.sourceRefs[0]?.anchor, 'h31-01')
-  assert.match(event.markdown, /当时参与者首先关心工程能否可靠运行/)
+  const event = collectEvents(docs).find(event => event.uid === 'event:h31-01')!
+  assert.equal(event.worldTime.year, 0)
+  assert.equal(event.sourceRefs[0]?.anchor, 'h31-01')
+  assert.equal(event.path, '/wiki/禁制#h31-01')
+  assert.equal(event.articleUid, 'wiki:ban')
+  assert.equal(event.embedded, true)
 })
 
 test('Chinese titles and punctuation survive validation; ambiguous or unsafe routes do not', async () => {
@@ -56,8 +58,8 @@ test('Chinese titles and punctuation survive validation; ambiguous or unsafe rou
   for (const key of ['../禁制', '禁制/子页', '禁制#定义', '禁制?版本', '禁制%2f内容', ' 禁制', 'category', 'e\u0301']) {
     assert.equal(wikiSchema.safeParse({ ...baseline, routeKey: key }).success, false, key)
   }
-  await fixture({ 禁制: { redirects: ['ban'] }, ban: {} }, async dir => {
-    await assert.rejects(readPublicContent(dir), /Duplicate route or redirect/)
+  await fixture({ Ban: {}, ban: {} }, async dir => {
+    await assert.rejects(readPublicContent(dir), /Duplicate route/)
   })
 })
 
@@ -86,12 +88,13 @@ test('public Markdown cannot link to private content or missing sections', async
 test('H31 contains all twelve original event IDs and sources keep their original hashes', async () => {
   const root = new URL('..', import.meta.url).pathname
   const docs = await readPublicContent(join(root, 'content/wiki'))
-  const events = docs.filter(doc => doc.metadata.uid.startsWith('event:h31-'))
-  assert.deepEqual(events.map(doc => doc.metadata.sourceIds[0]).sort(), Array.from({ length: 12 }, (_, i) => `H31-${String(i + 1).padStart(2, '0')}`))
-  assert.equal(docs.length, 18)
+  const events = collectEvents(docs).filter(event => event.uid.startsWith('event:h31-'))
+  assert.deepEqual(events.map(event => event.sourceIds[0]).sort(), Array.from({ length: 12 }, (_, i) => `H31-${String(i + 1).padStart(2, '0')}`))
+  assert.equal(docs.length, 6)
+  assert.equal(docs.filter(doc => doc.metadata.entityType === 'event').length, 1)
   const sources = await readSources(root)
-  assert.equal(sources.reduce((count, source) => count + source.analysis.explicitAnchors.size, 0), 106)
-  for (const doc of docs) for (const ref of doc.metadata.sourceRefs) {
+  assert.equal(sources.reduce((count, source) => count + source.analysis.explicitAnchors.size, 0), 151)
+  for (const doc of [...docs.map(doc => doc.metadata), ...events]) for (const ref of doc.sourceRefs) {
     assert.ok(sources.find(source => source.sourcePath === ref.path)?.analysis.explicitAnchors.has(ref.anchor))
   }
   const temporary = await mkdtemp(join(tmpdir(), 'hetwila-sources-'))
@@ -111,7 +114,7 @@ test('wiki and stories share a validated graph but have separate routes and narr
     await mkdir(folders.wiki); await mkdir(folders.stories)
     const original = matter(await readFile(join(root, 'content/stories/第一次选择.md'), 'utf8')).data
     const story = { ...original, uid: 'story:同名', scopeUid: 'story:同名', routeKey: '同名', relations: [] }
-    await writeFile(join(folders.wiki, '同名.md'), matter.stringify('[阅读作品](/stories/同名#一)', { ...baseline, uid: 'wiki:同名', routeKey: '同名', redirects: [], relations: [{ type: 'mentions', target: 'story:同名' }] }))
+    await writeFile(join(folders.wiki, '同名.md'), matter.stringify('[阅读作品](/stories/同名#一)', { ...baseline, uid: 'wiki:同名', routeKey: '同名', relations: [{ type: 'mentions', target: 'story:同名' }] }))
     await writeFile(join(folders.stories, '同名.md'), matter.stringify('## 一\n\n[查阅设定](/wiki/同名)', story))
     const docs = await readPublicContent(folders)
     const graph = buildContentGraph(docs)
@@ -125,9 +128,9 @@ test('wiki and stories share a validated graph but have separate routes and narr
     for (const fields of [{ visibility: 'private' }, { publicationStatus: 'draft' }, { publicationStatus: 'withdrawn' }]) {
       await writeFile(join(folders.stories, '同名.md'), matter.stringify('正文', { ...story, ...fields }))
       await assert.rejects(readPublicContent(folders), /Unpublished or missing relation/)
-      await writeFile(join(folders.wiki, '同名.md'), matter.stringify('公开设定', { ...baseline, uid: 'wiki:同名', routeKey: '同名', redirects: [], relations: [] }))
+      await writeFile(join(folders.wiki, '同名.md'), matter.stringify('公开设定', { ...baseline, uid: 'wiki:同名', routeKey: '同名', relations: [] }))
       assert.deepEqual((await readPublicContent(folders)).map(doc => doc.metadata.uid), ['wiki:同名'])
-      await writeFile(join(folders.wiki, '同名.md'), matter.stringify('公开设定', { ...baseline, uid: 'wiki:同名', routeKey: '同名', redirects: [], relations: [{ type: 'mentions', target: 'story:同名' }] }))
+      await writeFile(join(folders.wiki, '同名.md'), matter.stringify('公开设定', { ...baseline, uid: 'wiki:同名', routeKey: '同名', relations: [{ type: 'mentions', target: 'story:同名' }] }))
     }
   } finally { await rm(directory, { recursive: true, force: true }) }
 })
@@ -142,7 +145,7 @@ test('the supplied story retains all prose and the complete setting archive matc
   assert.match(story.markdown, /\[第一届议长选举\]\(\/wiki\/1747年议长选举\)/)
   assert.equal((story.markdown.match(/^## /gm) ?? []).length, 6)
   const sources = await readSources(root)
-  const graph = buildContentGraph(docs, new Map(sources.map(source => [source.path, source.analysis.anchors])))
+  const graph = buildContentGraph(docs, new Map([['/timeline', new Set<string>()], ...sources.map(source => [source.path, source.analysis.anchors] as const)]))
   assert.ok(graph.some(edge => edge.type === 'depicts' && edge.source === 'story:第一次选择' && edge.target === 'event:h48-08'))
   assert.ok(graph.some(edge => edge.type === 'mentions' && edge.target === 'wiki:诺菲莉亚' && edge.sectionId === '一'))
   await assert.rejects(readStoryOriginals(root, [{ ...story, markdown: story.markdown.replace('纪元1747年', '纪元1748年') }]), /Story text differs/)
@@ -158,5 +161,37 @@ test('depicts only describes a story-to-event relation, never promotes fiction t
   for (const doc of [story, concept]) {
     const changed = { ...doc, markdown: '', metadata: { ...doc.metadata, relations: [{ type: 'depicts' as const, target: 'wiki:帝国公民' }] } }
     assert.throws(() => buildContentGraph([changed, ...docs.filter(item => item.metadata.uid !== changed.metadata.uid)]), new RegExp('depicts must link'))
+  }
+})
+
+test('embedded events require real paragraph anchors and globally unique identities', async () => {
+  const docs = await readPublicContent(new URL('../content/wiki', import.meta.url).pathname)
+  const source = docs.find(doc => doc.metadata.uid === 'wiki:ban')!
+  assert.notEqual(source.metadata.entityType, 'story')
+  const event = source.metadata.entityType === 'story' ? undefined : source.metadata.events[0]!
+  await fixture({ 禁制: { events: [event] } }, async dir => {
+    await assert.rejects(readPublicContent(dir), /Missing embedded event anchor/)
+  })
+  await fixture({ 禁制: { events: [event], bodyMarkdown: '<span id="h31-01"></span>\n\n事件正文' }, 重复: { uid: event!.uid } }, async dir => {
+    await assert.rejects(readPublicContent(dir), /Duplicate uid/)
+  })
+  await fixture({ 秘密: { events: [event], visibility: 'private' }, 公开: { relations: [{ type: 'mentions', target: event!.uid }] } }, async dir => {
+    await assert.rejects(readPublicContent(dir), /Unpublished or missing relation/)
+  })
+})
+
+test('paragraph links and story depicts preserve event identity and the owning article backlink', async () => {
+  const root = new URL('..', import.meta.url).pathname
+  const docs = await readPublicContent({ wiki: join(root, 'content/wiki'), stories: join(root, 'content/stories') })
+  const story = docs.find(doc => doc.metadata.entityType === 'story')!
+  const changed = { ...story, markdown: '[启用](/wiki/禁制#h31-01)', metadata: { ...story.metadata, relations: [{ type: 'depicts' as const, target: 'event:h31-01' }] } }
+  const ban = docs.find(doc => doc.metadata.uid === 'wiki:ban')!
+  const graph = buildContentGraph([changed, { ...ban, markdown: '<span id="h31-01"></span>\n\n系统启用。' }])
+  assert.equal(graph.length, 2)
+  assert.deepEqual(graph.map(edge => edge.type).sort(), ['depicts', 'mentions'])
+  for (const edge of graph) {
+    assert.equal(edge.target, 'event:h31-01')
+    assert.equal(edge.targetArticleUid, 'wiki:ban')
+    assert.equal(edge.targetPath, '/wiki/禁制#h31-01')
   }
 })
