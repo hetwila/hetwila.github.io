@@ -75,7 +75,7 @@ test('mobile forum navigation, floor mentions, keyboard pagination and search re
 
 test('forum HTTP exports remain independent, preserve the exact original and expose every floor to AI', async ({ request }) => {
   const manifest = await (await request.get('/data/v1/manifest.json')).json()
-  expect(manifest).toMatchObject({ forumThreadCount: 1, forumPostCount: 204, documentCount: 7 })
+  expect(manifest).toMatchObject({ forumThreadCount: 1, forumPostCount: 204, documentCount: 12 })
   const [entry] = await (await request.get(manifest.forum)).json()
   const thread = await (await request.get(entry.jsonUrl)).json()
   expect(thread).toMatchObject({ narrativeLayer: 'in-world-discussion', scopeUid: entry.uid, postCount: 204, replyCount: 203, participantCount: 24 })

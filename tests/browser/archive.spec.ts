@@ -62,10 +62,12 @@ test('directory categories, precise search and the year-zero timeline connect th
 })
 
 test('source anchors, exact original downloads and embedded event paragraphs are available without JavaScript', async ({ browser, request }) => {
+  // This scenario opens every allowlisted source; the six-person import expands it to 47 pages.
+  test.setTimeout(60_000)
   const manifest = await (await request.get('/data/v1/manifest.json')).json()
   const sources = await (await request.get(manifest.references)).json()
   const mapping = await (await request.get(manifest.sourceMap)).json()
-  expect(mapping.anchors).toHaveLength(151)
+  expect(mapping.anchors).toHaveLength(505)
   const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 375, height: 812 } })
   const page = await context.newPage()
   for (const source of sources) {
@@ -73,7 +75,8 @@ test('source anchors, exact original downloads and embedded event paragraphs are
     expect(createHash('sha256').update(bytes).digest('hex')).toBe(source.sha256)
     await page.goto(source.path)
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
-    for (const anchor of source.anchors) await expect(page.locator(`[id="${anchor}"]`)).toHaveCount(1)
+    const ids = await page.locator('[id]').evaluateAll(nodes => nodes.map(node => node.id))
+    for (const anchor of source.anchors) expect(ids.filter(id => id === anchor), `${source.path}#${anchor}`).toHaveLength(1)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy()
   }
   await page.goto('/wiki/禁制')

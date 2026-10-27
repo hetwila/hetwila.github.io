@@ -123,7 +123,7 @@ await writeFile(join(root, '.generated/events.json'), json(events))
 await writeFile(join(root, '.generated/forum.json'), json(forum))
 await publish('/data/v1/manifest.json', json({
   schemaVersion: 1, settingVersion: '3.0.3', siteRelease,
-  scope: '禁制机制、H31 全部事件与1747年选举相关百科、故事《第一次选择》，以及独立的世界内论坛；并非完整设定集。',
+  scope: '六位皇族的完整人物条目、禁制机制、H31 全部事件与1747年选举相关百科、故事《第一次选择》，以及独立的世界内论坛；并非完整设定集。',
   documentCount: documents.length, wikiCount: documents.filter(doc => doc.entityType !== 'story').length, storyCount: originals.length, eventCount: events.length, referenceCount: references.length,
   forumThreadCount: forum.length, forumPostCount: forum.reduce((sum, thread) => sum + thread.postCount, 0),
   catalog: catalogUrl, relations: relationsUrl, references: referencesUrl, sourceMap: sourceMapUrl, events: eventsUrl, forum: forumUrl,

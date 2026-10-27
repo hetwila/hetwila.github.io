@@ -90,10 +90,10 @@ test('H31 contains all twelve original event IDs and sources keep their original
   const docs = await readPublicContent(join(root, 'content/wiki'))
   const events = collectEvents(docs).filter(event => event.uid.startsWith('event:h31-'))
   assert.deepEqual(events.map(event => event.sourceIds[0]).sort(), Array.from({ length: 12 }, (_, i) => `H31-${String(i + 1).padStart(2, '0')}`))
-  assert.equal(docs.length, 6)
+  assert.equal(docs.length, 11)
   assert.equal(docs.filter(doc => doc.metadata.entityType === 'event').length, 1)
   const sources = await readSources(root)
-  assert.equal(sources.reduce((count, source) => count + source.analysis.explicitAnchors.size, 0), 151)
+  assert.equal(sources.reduce((count, source) => count + source.analysis.explicitAnchors.size, 0), 505)
   for (const doc of [...docs.map(doc => doc.metadata), ...events]) for (const ref of doc.sourceRefs) {
     assert.ok(sources.find(source => source.sourcePath === ref.path)?.analysis.explicitAnchors.has(ref.anchor))
   }

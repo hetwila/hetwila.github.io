@@ -7,7 +7,7 @@ test('read from the entry page through both linked concepts without runtime erro
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('世界辽阔')
-  await expect(page.getByText('6 个百科条目')).toBeVisible()
+  await expect(page.getByText('11 个百科条目')).toBeVisible()
   await page.getByRole('link', { name: '开始阅读', exact: true }).last().click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('禁制')
   await expect(page.locator('.article-prose')).toContainText('世界纪年0年')
@@ -53,7 +53,7 @@ test('machine readers discover, verify and read the same public documents with H
   expect(response.ok()).toBeTruthy()
   const manifest = await response.json()
   const catalog = await (await request.get(manifest.catalog)).json()
-  expect(catalog).toHaveLength(7)
+  expect(catalog).toHaveLength(12)
   for (const item of catalog) {
     const md = await request.get(item.markdownUrl)
     expect(md.ok()).toBeTruthy()
