@@ -141,6 +141,14 @@ jobs:
                       path, _, anchor = event['path'].partition('#')
                       if anchor:
                           assert f'id="{anchor}"' in read(path).decode(), f'Missing event paragraph: {event["path"]}'
+                  assert '世界内论坛' in read('/forum').decode()
+                  for entry in json.loads(read(manifest['forum'])):
+                      thread = json.loads(read(entry['jsonUrl']))
+                      pages = {path: read(path).decode() for path in thread['pages']}
+                      for post in thread['posts']:
+                          path, _, anchor = post['path'].partition('#')
+                          assert f'id="{anchor}"' in pages[path], f'Missing forum floor: {post["path"]}'
+                      assert all(thread['title'] in html for html in pages.values()), 'Missing forum title'
                   assert '/data/v1/manifest.json' in read('/llms.txt').decode()
                   for path, expected in manifest['files'].items():
                       assert hashlib.sha256(read(path)).hexdigest() == expected, f'Content checksum mismatch: {path}'

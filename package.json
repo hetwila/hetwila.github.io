@@ -15,7 +15,7 @@
     "generate": "pnpm prepare:content && nuxt generate && pagefind --site .output/public",
     "preview": "serve .output/public --listen 4173 --no-clipboard",
     "typecheck": "pnpm prepare:content && nuxt typecheck",
-    "test:content": "node --test tests/content.test.ts",
+    "test:content": "node --test tests/*.test.ts",
     "test:e2e": "playwright test",
     "test": "pnpm test:content && pnpm generate && pnpm test:e2e",
     "postinstall": "nuxt prepare"

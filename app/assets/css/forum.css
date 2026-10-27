@@ -1,0 +1,22 @@
+/* Forum layout is denser than the encyclopedia, using the same role tokens. */
+.forum-heading { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: var(--ds-space-stack); }
+.forum-board { overflow: hidden; border: var(--ds-border-width) solid var(--ui-border); border-radius: var(--ds-radius-card); background: var(--ds-surface-raised); }
+.forum-topic-row { display: grid; grid-template-columns: minmax(0, 1fr) var(--ds-forum-author-width) var(--ds-forum-author-width); gap: var(--ds-space-stack); padding: var(--ds-forum-post-padding); }
+.forum-topic-row + .forum-topic-row { border-top: var(--ds-border-width) solid var(--ui-border); }
+.forum-posts { border: var(--ds-border-width) solid var(--ui-border); border-radius: var(--ds-radius-card); overflow: clip; background: var(--ds-surface-raised); }
+.forum-post { display: grid; grid-template-columns: var(--ds-forum-author-width) minmax(0, 1fr); scroll-margin-top: var(--ds-space-inline); }
+.forum-post + .forum-post { border-top: var(--ds-border-width) solid var(--ui-border); }
+.forum-post:target { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: calc(var(--ds-focus-width) * -1); }
+.forum-post-author { display: flex; flex-direction: column; align-items: start; gap: var(--ds-space-inline); min-width: 0; padding: var(--ds-forum-post-padding); background: var(--ds-surface-tint); border-right: var(--ds-border-width) solid var(--ui-border); overflow-wrap: anywhere; }
+.forum-floor-link { display: inline-flex; gap: calc(var(--spacing) * 1.5); align-items: center; min-height: var(--ds-control-size); }
+.forum-post-content { min-width: 0; padding: var(--ds-forum-post-padding); }
+.forum-prose { @apply text-forum max-w-reading; overflow-wrap: anywhere; }
+.forum-prose p { @apply my-forum-paragraph; }
+.forum-prose > :first-child { margin-top: 0; }
+.forum-prose > :last-child { margin-bottom: 0; }
+@variant max-md {
+  .forum-topic-row { grid-template-columns: 1fr; gap: var(--ds-space-inline); }
+  .forum-post { grid-template-columns: 1fr; }
+  .forum-post-author { flex-direction: row; align-items: center; border-right: 0; border-bottom: var(--ds-border-width) solid var(--ui-border); }
+  .forum-floor-link { margin-left: auto; flex-shrink: 0; }
+}

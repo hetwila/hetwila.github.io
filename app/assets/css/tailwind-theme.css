@@ -30,6 +30,8 @@
   --text-title--line-height: var(--ds-leading-heading);
   --text-display: var(--ds-text-display);
   --text-display--line-height: var(--ds-leading-display);
+  --text-forum: var(--ds-forum-font-size);
+  --text-forum--line-height: var(--ds-forum-leading);
   --leading-copy: var(--ds-leading-copy);
   --leading-prose: var(--ds-leading-prose);
   --leading-heading: var(--ds-leading-heading);
@@ -47,6 +49,9 @@
   --spacing-page-block: var(--ds-space-page-block);
   --spacing-control: var(--ds-control-size);
   --spacing-icon: var(--ds-icon-size);
+  --spacing-forum-author: var(--ds-forum-author-width);
+  --spacing-forum-post: var(--ds-forum-post-padding);
+  --spacing-forum-paragraph: var(--ds-forum-paragraph-gap);
   --container-page: var(--ds-page-width);
   --container-reading: var(--ds-reading-width);
   --container-search: var(--ds-dialog-width);

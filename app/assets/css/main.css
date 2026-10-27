@@ -5,6 +5,7 @@
 @import "./tokens.css";
 @import "./tailwind-theme.css";
 @import "./archive.css";
+@import "./forum.css";
 
 @source "../../../.generated/content/**/*.md";
 

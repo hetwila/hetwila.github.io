@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { PublicDocument } from '../../shared/content-schema'
 import catalog from '../../.generated/catalog.json'
+import forum from '../../.generated/forum.json'
+import type { ForumThreadExport } from '../../shared/forum'
 import events from '../../.generated/events.json'
 import { normalizeQuery } from '~/utils/content'
 
@@ -16,6 +18,7 @@ interface PagefindData { url: string, meta: { title: string }, excerpt: string }
 interface Pagefind { search: (query: string) => Promise<{ results: { data: () => Promise<PagefindData> }[] }> }
 let engine: Promise<Pagefind> | undefined
 let devDocuments: Promise<PublicDocument[]> | undefined
+let devForum: Promise<ForumThreadExport[]> | undefined
 
 async function search() {
   const id = ++request
@@ -34,6 +37,11 @@ async function search() {
       })()
       const docs = await devDocuments
       found = docs.filter(doc => [doc.title, doc.description, ...doc.aliases, ...doc.sourceIds, doc.bodyMarkdown].join(' ').toLowerCase().includes(term.toLowerCase())).map(doc => ({ title: doc.title, url: doc.path, excerpt: doc.description }))
+      devForum ??= Promise.all(forum.map(thread => $fetch<ForumThreadExport>(thread.jsonUrl)))
+      for (const thread of await devForum) {
+        const post = thread.posts.find(post => normalizeQuery(`${post.author} ${post.bodyMarkdown}`).includes(term))
+        if (post) found.push({ title: thread.title, url: post.path, excerpt: `${post.floor}L · ${post.author}：${post.bodyMarkdown.slice(0, 160)}` })
+      }
     } else {
       const url = new URL('/pagefind/pagefind.js', window.location.origin).href
       engine ??= import(/* @vite-ignore */ url) as Promise<Pagefind>
@@ -45,6 +53,7 @@ async function search() {
     // keeps a responsible definition discoverable as the archive grows.
     const exact = [...events, ...catalog].filter(doc => [doc.title, ...doc.aliases, ...doc.sourceIds].some(value => normalizeQuery(value) === term))
       .map(doc => ({ title: doc.title, url: doc.path, excerpt: doc.description }))
+    exact.push(...forum.filter(thread => [thread.title, thread.routeKey].some(value => normalizeQuery(value) === term)).map(thread => ({ title: thread.title, url: thread.path, excerpt: thread.description })))
     const seen = new Set<string>()
     const combined = [...exact, ...found].filter(item => {
       const key = decodeURI(item.url).split('#')[0]!.replace(/\/$/, '')
@@ -57,6 +66,7 @@ async function search() {
     if (id === request) { error.value = true; results.value = [] }
     engine = undefined
     devDocuments = undefined
+    devForum = undefined
   } finally {
     if (id === request) pending.value = false
   }
@@ -73,17 +83,17 @@ onBeforeUnmount(() => { clearTimeout(debounce); ++request })
 </script>
 
 <template>
-  <UModal v-model:open="open" title="搜索设定" description="检索百科与故事，或通过历史编号定位事件。" :ui="{ content: 'sm:max-w-search', body: 'p-0 sm:p-0' }">
+  <UModal v-model:open="open" title="搜索设定" description="检索百科、故事与独立论坛讨论，或通过历史编号定位事件。" :ui="{ content: 'sm:max-w-search', body: 'p-0 sm:p-0' }">
     <template #body>
       <div class="search-field"><UInput ref="input" v-model="query" autofocus size="xl" icon="i-lucide-search" placeholder="试试「禁制」或「H31-01」" aria-label="搜索关键词" class="w-full" /></div>
       <div class="search-results" aria-live="polite">
         <p v-if="pending" class="search-message">正在查找…</p>
         <p v-else-if="error" class="search-message">搜索暂时不可用。请从首页的条目列表继续阅读。</p>
-        <template v-else-if="results.length"><NuxtLink v-for="result in results" :key="result.url" :to="result.url" class="search-result" @click="open = false"><UIcon name="i-lucide-file-text" /><div><strong>{{ result.title }}</strong><p>{{ result.excerpt }}</p></div><UIcon name="i-lucide-arrow-up-right" /></NuxtLink></template>
+        <template v-else-if="results.length"><NuxtLink v-for="result in results" :key="result.url" :to="result.url" class="search-result" @click="open = false"><UIcon name="i-lucide-file-text" /><div><span v-if="result.url.startsWith('/forum/')" class="block text-caption text-primary mb-1">世界内论坛</span><strong>{{ result.title }}</strong><p>{{ result.excerpt }}</p></div><UIcon name="i-lucide-arrow-up-right" /></NuxtLink></template>
         <p v-else-if="query.trim()" class="search-message">没有找到相关条目。试试其他关键词或事件编号。</p>
         <p v-else class="search-message">从一个名字、别名或历史编号开始。</p>
       </div>
-      <div class="search-bottom">检索 {{ catalog.length }} 个已收录条目与故事。<span>ESC 关闭</span></div>
+      <div class="search-bottom">{{ catalog.length }} 个条目与故事 · {{ forum.length }} 个论坛主题<span>ESC 关闭</span></div>
     </template>
   </UModal>
 </template>

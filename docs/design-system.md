@@ -105,6 +105,7 @@ Tailwind 生成 CSS 和 Nuxt UI 合并类名是两件事。自定义 `text-card`
 | 来源面板、状态、操作 | `UCard`、`UBadge`、`UButton` |
 | 搜索 | `UModal`、`UInput`；查询由 Pagefind 完成 |
 | 故事阅读布局 | `UPage`、`ContentRenderer` 与共用阅读宽度／正文 token，首页与书架复用 `UPageCard` |
+| 论坛主题与楼层 | `UBreadcrumb`、`UAvatar`、`UBadge`、`UPagination`、`UInput`、`UButton` 与 `ContentRenderer`；分页通过 `to` 生成真实链接 |
 | 页面目录 | `UContentToc`，手机折叠、桌面滚动定位 |
 | 页脚及基础上下文 | `UFooter`、`UApp`，语言为 `zh_cn` |
 
@@ -119,3 +120,16 @@ Tailwind 生成 CSS 和 Nuxt UI 合并类名是两件事。自定义 `text-card`
 视觉验收还应检查桌面／手机截图、排版和焦点。axe 自动检查不能替代人工审查所有布局、渐变背景或任意用户自定义色板。
 
 故事页沿用 `article-header`、`article-prose` 和 `max-w-reading`，不另设硬编码颜色或字号。六节标题驱动 `UContentToc`；手机使用折叠目录，桌面使用侧栏。Wiki 与故事共用 `ContentSources` 面板，原稿校验信息放在原生 `details` 中；故事正文保持连续阅读，背景解释与机器下载入口放在正文之外。
+
+## 论坛排版
+
+`forum.css` 在 `archive.css` 后加载。桌面楼层使用左侧昵称栏与右侧正文，手机将昵称、头像和楼号收成顶部栏；长主题标题使用 `text-section`，留出首屏阅读空间。每层为语义化 `article`，楼号链接与引用指向完整讨论的明确锚点。只看楼主通过独立静态路由实现，不依赖隐藏 DOM；数字输入跳转仅作渐进增强。组件沿用全站深浅色，昵称首字头像用 `UAvatar`，无外部图片请求或按作者硬编码色值。
+
+| 变量 | Tailwind 接口 | 用途 |
+| --- | --- | --- |
+| `--ds-forum-font-size` / `--ds-forum-leading` | `text-forum`（含配对行高） | 稍紧凑的发言正文，默认继承 copy 尺度 |
+| `--ds-forum-author-width` | `w-forum-author` | 桌面昵称栏和主题列表辅助列宽度 |
+| `--ds-forum-post-padding` | `p-forum-post` | 昵称栏／正文留白；手机降低密度，仍由 spacing 派生 |
+| `--ds-forum-paragraph-gap` | `my-forum-paragraph` | 发言内部段距 |
+
+这些名称均经 Tailwind 4 `@theme inline` 和 Nuxt UI `ui.tv` 登记；自定义布局直接消费同一变量。楼层定位的高亮用全站 focus 角色，页面不添加独立深色覆盖。`tests/browser/forum.spec.ts` 覆盖两种主题、桌面／手机 axe 检查、无 JS 完整原文、键盘分页、楼层定位及独立导出；视觉验收还需检查截图。

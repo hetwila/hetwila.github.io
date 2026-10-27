@@ -2,7 +2,7 @@
 
 Nuxt 4 + Nuxt UI 4 + Nuxt Content 3 的静态档案网站，使用 Tailwind CSS 4 和分层设计系统。站点：<https://hetwila.github.io/>。
 
-目前包含首页、百科目录与分类、年代列表、6 个主题百科条目、故事书架和首篇《第一次选择》、十四份可阅读全文的来源资料、Pagefind 中文搜索，以及供 AI 直接读取的 Markdown／JSON 和关系、来源锚点映射。H31 的全部 12 个事件已整合进“禁制”正文，年代页仍保留这 12 个节点和1747年议长选举。模拟论坛和 Supabase 尚未实施。
+目前包含首页、百科目录与分类、年代列表、6 个主题百科条目、故事书架和首篇《第一次选择》、独立世界内论坛及首个204层讨论、十四份可阅读全文的来源资料、Pagefind 中文搜索，以及供 AI 直接读取的 Markdown／JSON 和关系、来源锚点映射。H31 的全部 12 个事件已整合进“禁制”正文，年代页仍保留这 12 个节点和1747年议长选举。Supabase 与真实用户互动尚未实施。
 
 已支持系统／浅色／深色主题、手机导航、页面目录与键盘搜索。开发约定见 [AGENTS.md](AGENTS.md)，主题与组件契约见 [设计系统](docs/design-system.md)，完整产品规划见 [网站设计书](docs/网站设计书.md)。百科作者和 AI 可直接阅读[百科条目编写规范](docs/百科条目编写规范.md)，获取当前文件格式、完整示例、来源和互链规则，以及[三种模板](docs/模板/)。无需先了解网站代码。
 
@@ -49,7 +49,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-开发进程默认端口3000，同时监听原始内容目录并重新生成可公开内容。修改 `content/wiki/*.md` 或 `content/stories/*.md` 后，等待内容转换完成，刷新页面即可看到更新；页面／样式由Nuxt热更新。开发进程与静态构建都不需要 Supabase 密钥。
+开发进程默认端口3000，同时监听原始内容目录并重新生成可公开内容。修改 `content/wiki/*.md`、`content/stories/*.md` 或 `content/forum/*.md` 后，等待内容转换完成，刷新页面即可看到更新；页面／样式由Nuxt热更新。开发进程与静态构建都不需要 Supabase 密钥。
 
 ## 检查与构建
 
@@ -66,7 +66,7 @@ pnpm dev
 
 Playwright优先使用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`，或云环境已有的 `/usr/bin/chromium`。其他环境可运行 `pnpm exec playwright install chromium`。测试需要4173端口可用，不复用不明的现有服务。
 
-主题验收使用 `@axe-core/playwright` 检查两种模式下的首页、百科、故事书架、故事阅读页和搜索弹窗，并验证系统偏好、切换持久化、颜色／尺寸变量传递及手机导航。视觉变动还需检查桌面与手机截图；自动规则不等同于完整人工可访问性审计。
+主题验收使用 `@axe-core/playwright` 检查两种模式下的首页、百科、故事书架、故事阅读页、论坛及搜索弹窗，并验证系统偏好、切换持久化、颜色／尺寸变量传递及手机导航。视觉变动还需检查桌面与手机截图；自动规则不等同于完整人工可访问性审计。
 
 项目选择TypeScript 5.9.3：当前Vue类型检查器不能加载TypeScript 7的编译入口。不要单独升级到7；待工具链兼容后一起升级并重新验证。
 
@@ -89,14 +89,23 @@ Playwright优先使用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`，或云环境已有的 
 - 新增故事时同时保存原稿及校验值，创建中文阅读版并登记背景资料与关系。原稿首行须为标题（支持一级 Markdown 标题）；不要自动改写作者文字。未发表／私密故事与百科一样排除在公开集合外。
 - 目录与 JSON 记录内容类型；故事 JSON 还给出 `originalMarkdownUrl` 和 `originalSha256`，供 AI 核对原稿。`manifest.json` 的 `documentCount` 为百科与故事合计，另有 `wikiCount`、`storyCount`。
 
+## 独立世界内论坛
+
+- `/forum` 为社区／版块主题列表，首帖为“皇族历史同人讨论”：204层、203条回复、24个原稿昵称。正文完整保留，包括世界内推荐作品和创作脑洞；这些书名不会自动生成故事或百科页面。
+- `/forum/threads/皇族历史同人讨论/page/1` 起按每页20层生成11页；`/forum/threads/皇族历史同人讨论/author/page/1` 展示17条楼主发言，保留原楼号。翻页、楼层永久链接、楼内引用与只看楼主都支持无 JavaScript；楼层输入跳转是渐进增强。
+- 每帖一个中文 Markdown。原稿、校验值、完整字段及楼层标记格式见[论坛内容编写规范](docs/论坛内容编写规范.md)。生成的 `forumPosts` 集合用于复用 Nuxt Content 的正文渲染，不是另一份编辑源。
+- 论坛不参与百科／故事关系图、不自动添加概念链接和相关推荐；当前没有真实回帖、登录、点赞或用户档案功能。未提供的发帖时间、浏览量等不补造。
+- 首页与主导航可进入论坛；全站搜索标识“世界内论坛”。`manifest.forum` 指向独立主题目录，主题 JSON 一次提供全部楼层、中文阅读地址和原稿校验值。只看楼主的重复视图不进入搜索索引。
+
 ## 内容与机器读取
 
-- 编辑源：`content/wiki/` 与 `content/stories/`。每篇文件的 `routeKey` 与文件名一致。
+- 编辑源：`content/wiki/`、`content/stories/`、`content/forum/`。每篇文件的 `routeKey` 与文件名一致。
 - 来源：`sources/releases/3.0.3/` 保存十四份已引用的原始文档和 SHA-256，原文件保持不变；`sources/reading-map.json` 指定可公开原文的中文阅读路径。
-- 结构：`shared/content-schema.ts`，包括UID、事实状态、世界纪年、来源和关系。
-- 准备：`scripts/prepare-content.ts` 核对来源哈希／锚点和链接／身份，只将 `published + public` 百科／故事及允许公开的来源生成到 `.generated/content/`，由 Nuxt Content 读取；显式 path 保留中文标题，避免框架自动 slug 化。
+- 结构：`shared/content-schema.ts` 管理百科／故事；`shared/forum-schema.ts` 校验独立论坛，`shared/forum.ts` 只提供轻量类型和固定分页约定。校验依赖不进入论坛阅读的客户端代码。
+- 准备：`scripts/prepare-content.ts` 核对来源哈希／锚点和链接／身份，只将 `published + public` 百科／故事／论坛及允许公开的来源生成到 `.generated/content/`，由 Nuxt Content 读取；显式 path 保留中文标题，避免框架自动 slug 化。
 - 对外入口：`/llms.txt`、`/data/v1/manifest.json`。清单指向内容哈希版本中的 Markdown、JSON、目录、正向／反向关系、来源原文及 151 个原始锚点的阅读映射。机器导出的正文文件也使用中文名；HTTP 地址按标准 URL 编码。
 - 清单的 `events` 指向 `events.json`，包含独立及段落事件的 UID、来源、年份、所属 `articleUid`、带锚点的 `path` 与 `embedded` 标志。`eventCount` 统计事件节点；`documentCount` 仅统计独立百科与故事，不把段落重复计为文章。
+- 清单的 `forum` 指向 `forum.json`；`forumThreadCount`、`forumPostCount` 独立统计主题和楼层。论坛不混入百科／故事目录或事件来源映射。
 - 框架生成的数据库／payload同样只包含这份公开集合。私密内容不能仅靠页面过滤隐藏，也不要提交到公开Git仓库。
 
 Markdown原文与JSON正文来自同一个源文件；`worldTime.year: 0` 保持数字0，不转为公历。原文内部链接使用实际可访问的站内URL，关系由UID解析。页面的来源面板保留附件路径及锚点，供核对。
@@ -109,8 +118,8 @@ Markdown原文与JSON正文来自同一个源文件；`worldTime.year: 0` 保持
 
 站点地址：<https://hetwila.github.io/>。发布状态以 [Pages 工作流](https://github.com/hetwila/hetwila.github.io/actions/workflows/pages.yml) 为准。
 
-推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容／来源／链接测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、全部中文百科／故事／来源深链接、事件段落锚点和机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
+推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容／来源／链接测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、全部中文百科／故事／来源深链接、事件段落锚点、论坛全部分页／楼层及机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
 
 当前仓库的 Pages 来源已由管理员设置为 **GitHub Actions**（**Settings → Pages → Build and deployment → Source**）。工作流核对该设置，并通过 GitHub 自带的 `GITHUB_TOKEN` 与 OIDC 发布，不需要额外配置部署密钥。构建任务只读仓库，部署任务单独获得 Pages 写入权限；Actions 版本固定到提交 SHA。若在新仓库复用本工作流，需先启用 Pages 并选择 GitHub Actions 来源；自动切换被 GitHub 拒绝时会明确报告权限警告。
 
-发布目录只包含生成的HTML、Nuxt资源、Pagefind索引和机器数据；不需要运行Nuxt服务器。当前仓库为用户站点，部署基路径为 `/`。完整来源 ZIP、未收录资料、草稿、缓存与`.env`不进入发布产物；允许公开的来源原文及故事原稿由构建显式导出。
+发布目录只包含生成的HTML、Nuxt资源、Pagefind索引和机器数据；不需要运行Nuxt服务器。当前仓库为用户站点，部署基路径为 `/`。完整来源 ZIP、未收录资料、草稿、缓存与`.env`不进入发布产物；允许公开的来源原文、故事与论坛原稿由构建显式导出。

@@ -15,8 +15,8 @@ export default defineAppConfig({
       twMergeConfig: {
         extend: {
           theme: {
-            text: ['2xs', 'label', 'meta', 'caption', 'detail', 'copy', 'body', 'prose', 'card', 'section', 'title', 'display'],
-            spacing: ['gutter', 'inline', 'stack', 'panel', 'section', 'layout', 'grid', 'page-block', 'control', 'icon'],
+            text: ['2xs', 'label', 'meta', 'caption', 'detail', 'copy', 'body', 'prose', 'card', 'section', 'title', 'display', 'forum'],
+            spacing: ['gutter', 'inline', 'stack', 'panel', 'section', 'layout', 'grid', 'page-block', 'control', 'icon', 'forum-author', 'forum-post', 'forum-paragraph'],
             container: ['page', 'reading', 'search'],
             radius: ['card', 'hero'],
             shadow: ['card'],

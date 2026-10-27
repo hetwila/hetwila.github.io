@@ -1,9 +1,15 @@
 import { defineCollection, defineContentConfig, z } from '@nuxt/content'
 import { fileURLToPath } from 'node:url'
 import { wikiSchema, storySchema } from './shared/content-schema'
+import { forumPostSchema } from './shared/forum-schema'
 
 export default defineContentConfig({
   collections: {
+    forumPosts: defineCollection({
+      type: 'page',
+      source: { cwd: fileURLToPath(new URL('./.generated/content', import.meta.url)), include: 'forum/*.md' },
+      schema: forumPostSchema,
+    }),
     stories: defineCollection({
       type: 'page',
       source: { cwd: fileURLToPath(new URL('./.generated/content', import.meta.url)), include: 'stories/*.md' },

@@ -79,8 +79,8 @@ const entries = ['wiki:ban', 'wiki:诺菲莉亚'].map(uid => catalog.find(entry 
     <section class="mt-section grid gap-panel border-y border-default py-page-block lg:grid-cols-[1.2fr_1fr_1fr]" aria-labelledby="future-title">
       <div><p class="eyebrow mb-2">MORE WAYS TO EXPLORE</p><h2 id="future-title" class="font-serif text-xl font-semibold text-highlighted">事实之外，还有生活</h2><p class="mt-3 text-caption leading-prose text-muted">同一个世界，也可以从不同的声音中认识。</p></div>
       <div class="flex gap-4"><UIcon name="i-lucide-book-open" class="mt-1 size-icon shrink-0 text-primary" /><div><h3 class="text-sm font-semibold text-highlighted">故事书架</h3><p class="mt-3 text-caption leading-prose text-muted">走进事件之中，阅读更具体的人与经历。</p><UButton to="/stories" variant="link" class="mt-3 p-0 text-caption" trailing-icon="i-lucide-arrow-right">浏览故事书架</UButton></div></div>
-      <div class="flex gap-4"><UIcon name="i-lucide-messages-square" class="mt-1 size-icon shrink-0 text-primary" /><div><h3 class="flex items-center gap-inline text-sm font-semibold text-highlighted">世界内论坛 <UBadge color="neutral" variant="subtle" size="sm">待收录</UBadge></h3><p class="mt-3 text-caption leading-prose text-muted">日常闲谈、历史讨论，以及他们的同人作品。</p></div></div>
+      <div class="flex gap-4"><UIcon name="i-lucide-messages-square" class="mt-1 size-icon shrink-0 text-primary" /><div><h3 class="text-sm font-semibold text-highlighted">世界内论坛</h3><p class="mt-3 text-caption leading-prose text-muted">历史区的一场长谈，从书单和脑洞，聊到五千年的日常。</p><UButton to="/forum" variant="link" class="mt-3 p-0 text-caption" trailing-icon="i-lucide-arrow-right">进入世界内论坛</UButton></div></div>
     </section>
-    <p class="edition-note"><UIcon name="i-lucide-info" /> 已收录禁制与公共工程的历史、1747年选举相关百科及首篇故事。更多设定与世界内论坛将继续整理。</p>
+    <p class="edition-note"><UIcon name="i-lucide-info" /> 已收录禁制与公共工程的历史、1747年选举相关百科、首篇故事及世界内论坛讨论。内容持续整理中。</p>
   </main>
 </template>
