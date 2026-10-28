@@ -65,7 +65,11 @@ async function main() {
       {name:'ACCOUNT_ALLOWED_ORIGINS',value:origins.join(',')},
     ])
     await cli(['functions','deploy','account-register','account-avatar','--project-ref',config.ref,'--use-api'])
-    await cli(['db','advisors','--project-ref',config.ref,'--type','security','--level','warn','--fail-on','error'])
+    // Use HTTPS like migrations; cloud executors may not have direct database TCP access.
+    const advisors=await management('/advisors/security')
+    if(!Array.isArray(advisors?.lints)) throw new Error('安全 advisors 返回格式异常，已停止部署。')
+    for(const lint of advisors.lints) console.log(`安全 advisor：${lint.level} ${lint.name}`)
+    if(advisors.lints.some((lint:{level:string})=>lint.level==='ERROR')) throw new Error('安全 advisors 检测到错误，请修复后重新部署。')
     const probe=await fetch(`${config.url}/functions/v1/account-avatar`,{method:'POST',headers:{apikey:process.env.SUPABASE_KEY!,Origin:origins[0]!}})
     if(probe.status!==401) throw new Error('头像接口的未登录访问验证未通过，请检查函数部署日志。')
     console.log('后端部署完成。Pages 构建仍需配置三个公开变量，详见 docs/用户系统.md。')
