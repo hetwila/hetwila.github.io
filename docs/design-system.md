@@ -104,6 +104,9 @@ Tailwind 生成 CSS 和 Nuxt UI 合并类名是两件事。自定义 `text-card`
 | 条目、分类目录与相关阅读 | `UPageGrid`、`UPageCard` |
 | 来源面板、状态、操作 | `UCard`、`UBadge`、`UButton` |
 | 搜索 | `UModal`、`UInput`；查询由 Pagefind 完成 |
+| 独立用户中心 | `UAuthForm`、`UForm`、`UFormField`、`UPageCard`、`UAlert`、`UAvatar`、`UFileUpload`；表单沿用阅读宽度与共用留白 |
+| 用户／邀请码管理 | `UTable`、`UTabs`、`UPagination`、`UModal`；日期显示使用浏览器时区 |
+| 头像裁剪 | Cropper.js 2，裁剪框颜色消费 `var(--ui-primary)`，容器使用语义表面；256×256 是文件规格，不是页面尺寸 token |
 | 故事阅读布局 | `UPage`、`ContentRenderer` 与共用阅读宽度／正文 token，首页与书架复用 `UPageCard` |
 | 论坛主题与楼层 | `UBreadcrumb`、`UAvatar`、`UBadge`、`UPagination`、`UInput`、`UButton` 与 `ContentRenderer`；分页通过 `to` 生成真实链接 |
 | 页面目录 | `UContentToc`，手机折叠、桌面滚动定位 |

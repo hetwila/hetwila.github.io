@@ -48,7 +48,14 @@ jobs:
       - name: Test content
         run: pnpm test:content
 
+      - name: Test account authorization and functions
+        run: pnpm test:accounts
+
       - name: Generate static site and search index
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL || secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ vars.SUPABASE_KEY || secrets.SUPABASE_KEY }}
+          NUXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NUXT_PUBLIC_TURNSTILE_SITE_KEY || secrets.NUXT_PUBLIC_TURNSTILE_SITE_KEY }}
         run: pnpm generate
 
       - name: Install Chromium for browser tests

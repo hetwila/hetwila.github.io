@@ -13,5 +13,6 @@ playwright-report/
 .env
 .env.*
 !.env.example
+.secrets/
 *.log
 .DS_Store
