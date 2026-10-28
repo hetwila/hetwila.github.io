@@ -63,8 +63,8 @@ test('registration validates password confirmation and CAPTCHA, then returns to 
   await submit.click();await expect(page.getByText('两次输入的密码不一致。')).toBeVisible()
   expect(api.requests.some(r=>r.path==='/functions/v1/account-register')).toBe(false)
   await page.getByLabel('再次输入密码',{exact:true}).fill('Password123!');await submit.click()
-  await expect(page).toHaveURL(/\/wiki\//)
-  expect(decodeURI(page.url())).toContain('/wiki/禁制')
+  // The returnTo query already contains /wiki/ before navigation completes.
+  await expect(page).toHaveURL(url=>decodeURIComponent(url.pathname)==='/wiki/禁制')
   expect(api.requests.find(r=>r.path==='/functions/v1/account-register')?.body).toMatchObject({inviteCode:'ABC123',turnstileToken:'test-proof',nickname:'重复昵称'})
 })
 test('login rejects invalid credentials and blocks an external return URL',async({page})=>{
