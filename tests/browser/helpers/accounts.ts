@@ -45,4 +45,3 @@ export async function accountFixture(page:Page,group?:'guest'|'admin') {
   return {requests,profile,avatar:()=>avatarBytes}
 }
 export async function captcha(page:Page) {await page.waitForFunction(()=>typeof (window as any).solveAccountCaptcha==='function');await page.evaluate(()=>(window as any).solveAccountCaptcha())}
-
