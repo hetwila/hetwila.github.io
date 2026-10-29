@@ -19,6 +19,9 @@ jobs:
   build:
     name: Build and test
     runs-on: ubuntu-24.04
+    # Environment variables are available only to jobs bound to that environment.
+    # github-pages permits main; feature-branch checks use no deployment environment.
+    environment: ${{ github.ref == 'refs/heads/main' && 'github-pages' || '' }}
     timeout-minutes: 20
     outputs:
       content-release: ${{ steps.content.outputs.release }}
@@ -48,8 +51,27 @@ jobs:
       - name: Test content
         run: pnpm test:content
 
+      - name: Test account authorization and functions
+        run: pnpm test:accounts
+
       - name: Generate static site and search index
-        run: pnpm generate
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL || secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ vars.SUPABASE_KEY || secrets.SUPABASE_KEY }}
+          NUXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NUXT_PUBLIC_TURNSTILE_SITE_KEY || secrets.NUXT_PUBLIC_TURNSTILE_SITE_KEY }}
+        run: |
+          if [[ "$GITHUB_REF" == 'refs/heads/main' ]]; then
+            node --input-type=module <<'JS'
+          import { publicAccountConfig } from './shared/account-config.ts'
+          const required = ['SUPABASE_URL', 'SUPABASE_KEY', 'NUXT_PUBLIC_TURNSTILE_SITE_KEY']
+          for (const name of required) {
+            if (!process.env[name]) throw new Error(`Missing public Pages variable: ${name}`)
+          }
+          publicAccountConfig(process.env)
+          console.log('All three public account build variables are present and validated.')
+          JS
+          fi
+          pnpm generate
 
       - name: Install Chromium for browser tests
         run: pnpm exec playwright install --with-deps chromium

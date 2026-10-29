@@ -1,0 +1,5 @@
+{
+  "nodeModulesDir": "none",
+  "lock": "deno.lock",
+  "compilerOptions": { "lib": ["deno.ns", "dom", "esnext"] }
+}

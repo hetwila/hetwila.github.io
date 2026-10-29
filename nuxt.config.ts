@@ -1,11 +1,14 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { publicAccountConfig } from './shared/account-config'
 
 const routeFile = new URL('./.generated/routes.json', import.meta.url)
 const routes: string[] = existsSync(routeFile) ? JSON.parse(readFileSync(routeFile, 'utf8')) : ['/', '/wiki', '/stories', '/forum', '/timeline', '/reference']
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-24',
-  modules: ['@nuxt/ui', '@nuxt/content'],
+  modules: ['@nuxt/ui', '@nuxt/content', '@nuxtjs/turnstile'],
+  runtimeConfig: { public: { ...publicAccountConfig(process.env) } },
+  turnstile: { siteKey: process.env.NUXT_PUBLIC_TURNSTILE_SITE_KEY || '', secretKey: '', addValidateEndpoint: false },
   css: ['~/assets/css/main.css'],
   devtools: { enabled: false },
   ssr: true,
@@ -25,7 +28,7 @@ export default defineNuxtConfig({
     prerender: {
       crawlLinks: true,
       failOnError: true,
-      routes,
+      routes: [...routes, '/account', '/account/login', '/account/register', '/account/admin'],
     },
   },
   typescript: { strict: true },

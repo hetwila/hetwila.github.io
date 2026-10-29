@@ -2,7 +2,9 @@
 
 Nuxt 4 + Nuxt UI 4 + Nuxt Content 3 的静态档案网站，使用 Tailwind CSS 4 和分层设计系统。站点：<https://hetwila.github.io/>。
 
-目前包含首页、百科目录与分类、年代列表、11 个主题百科条目（含六位皇族的完整人物条目）、故事书架和首篇《第一次选择》、独立世界内论坛及首个204层讨论、47 份可阅读全文的来源资料、Pagefind 中文搜索，以及供 AI 直接读取的 Markdown／JSON 和关系、来源锚点映射。H31 的全部 12 个事件已整合进“禁制”正文，年代页仍保留这 12 个节点和1747年议长选举。Supabase 与真实用户互动尚未实施。
+目前包含首页、百科目录与分类、年代列表、11 个主题百科条目（含六位皇族的完整人物条目）、故事书架和首篇《第一次选择》、独立世界内论坛及首个204层讨论、47 份可阅读全文的来源资料、Pagefind 中文搜索，以及供 AI 直接读取的 Markdown／JSON 和关系、来源锚点映射。H31 的全部 12 个事件已整合进“禁制”正文，年代页仍保留这 12 个节点和1747年议长选举。
+
+独立用户系统已实现：Supabase 邮箱密码登录、邀请码注册与 Turnstile、guest/admin 用户组、资料与头像裁剪、旧密码验证、管理员邀请码管理和用户列表。2026-10-29 已部署真实 Supabase 后端并创建首位管理员，云端强制旧密码设置及 36 项接口断言通过。前端尚未合并发布：公开变量已由用户配置到 GitHub 的 `github-pages` Environment，工作流已补齐 main 构建的环境绑定，待流水线验证；真实 Turnstile 正向注册验收仍受挑战子域名的代理拒绝影响。部署步骤、当前验收状态与 API 见 [用户系统](docs/用户系统.md)。账号暂不接入百科、故事或论坛互动。
 
 已支持系统／浅色／深色主题、手机导航、页面目录与键盘搜索。开发约定见 [AGENTS.md](AGENTS.md)，主题与组件契约见 [设计系统](docs/design-system.md)，完整产品规划见 [网站设计书](docs/网站设计书.md)。百科作者和 AI 可直接阅读[百科条目编写规范](docs/百科条目编写规范.md)，获取当前文件格式、完整示例、来源和互链规则，以及[三种模板](docs/模板/)。无需先了解网站代码。
 
@@ -25,6 +27,8 @@ npx skills@1.7.4 experimental_install --agent codex --yes
 ```
 
 首次安装的等价命令是 `npx skills@1.7.4 add nuxt/ui --skill nuxt-ui --agent codex --yes`。升级使用 `npx skills@1.7.4 update nuxt-ui --project --yes`，并审查技能与锁文件差异。锁文件记录来源、路径与内容哈希；已提交的技能文件保留本次实际使用的版本。
+
+同时保留 Supabase 官方 [`supabase`](.agents/skills/supabase/SKILL.md) 与 [`supabase-postgres-best-practices`](.agents/skills/supabase-postgres-best-practices/SKILL.md) 技能及锁记录。安装命令为 `npx skills@1.7.4 add supabase/agent-skills --skill supabase supabase-postgres-best-practices --agent codex --yes`，恢复时使用上面的锁文件安装命令。
 
 [`.codex/config.toml`](.codex/config.toml) 配置了官方 Nuxt UI MCP。支持项目级配置的客户端加载后可调用它，需要网络允许 `ui.nuxt.com`；本次云会话仍受网络策略限制，组件 API 已按已安装版本的源码、类型和生成主题核对。云环境的 `npx` 如遇缓存权限问题，加上 `npm_config_cache=/workspace/.cache/hetwila/npm`。
 
@@ -63,6 +67,10 @@ pnpm dev
 | `pnpm preview` | 在4173端口运行静态产物验证服务 |
 | `pnpm test:e2e` | 对生成产物运行阅读、搜索、主题、可访问性与HTTP测试，自动启停验证服务 |
 | `pnpm test` | 内容测试 → 生成 → 浏览器测试 |
+| `pnpm test:accounts` | Edge Function 测试 → 真实 PostgreSQL／Auth／PostgREST 权限集成测试（需要 Docker） |
+| `pnpm accounts:check` | 仅检查所需变量是否已加载，不输出值 |
+| `pnpm accounts:deploy` | 使用项目管理令牌部署数据库、Auth 设置与 Edge Functions |
+| `pnpm accounts:bootstrap <邮箱>` | 安全初始化首位管理员；凭据只写入被 Git 忽略的本地文件 |
 
 Playwright优先使用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`，或云环境已有的 `/usr/bin/chromium`。其他环境可运行 `pnpm exec playwright install chromium`。测试需要4173端口可用，不复用不明的现有服务。
 
@@ -96,7 +104,7 @@ Playwright优先使用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`，或云环境已有的 
 - `/forum` 为社区／版块主题列表，首帖为“皇族历史同人讨论”：204层、203条回复、24个原稿昵称。正文完整保留，包括世界内推荐作品和创作脑洞；这些书名不会自动生成故事或百科页面。
 - `/forum/threads/皇族历史同人讨论/page/1` 起按每页20层生成11页；`/forum/threads/皇族历史同人讨论/author/page/1` 展示17条楼主发言，保留原楼号。翻页、楼层永久链接、楼内引用与只看楼主都支持无 JavaScript；楼层输入跳转是渐进增强。
 - 每帖一个中文 Markdown。原稿、校验值、完整字段及楼层标记格式见[论坛内容编写规范](docs/论坛内容编写规范.md)。生成的 `forumPosts` 集合用于复用 Nuxt Content 的正文渲染，不是另一份编辑源。
-- 论坛不参与百科／故事关系图、不自动添加概念链接和相关推荐；当前没有真实回帖、登录、点赞或用户档案功能。未提供的发帖时间、浏览量等不补造。
+- 论坛不参与百科／故事关系图、不自动添加概念链接和相关推荐；当前没有真实回帖、点赞或论坛用户档案功能。独立站点账号不与虚构发言者绑定。未提供的发帖时间、浏览量等不补造。
 - 首页与主导航可进入论坛；全站搜索标识“世界内论坛”。`manifest.forum` 指向独立主题目录，主题 JSON 一次提供全部楼层、中文阅读地址和原稿校验值。只看楼主的重复视图不进入搜索索引。
 
 ## 内容与机器读取
@@ -121,6 +129,8 @@ Markdown原文与JSON正文来自同一个源文件；`worldTime.year: 0` 保持
 站点地址：<https://hetwila.github.io/>。发布状态以 [Pages 工作流](https://github.com/hetwila/hetwila.github.io/actions/workflows/pages.yml) 为准。
 
 推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容／来源／链接测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、全部中文百科／故事／来源深链接、事件段落锚点、论坛全部分页／楼层及机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
+
+工作流也执行账号权限与函数测试。启用账号页面需要 Actions 中的 `SUPABASE_URL`、`SUPABASE_KEY`、`NUXT_PUBLIC_TURNSTILE_SITE_KEY` 三个公开变量；不向静态构建传入服务 secret 或管理 PAT。Codex 环境设置不会自动同步到 Actions，详细配置见 [用户系统部署](docs/用户系统.md)。
 
 当前仓库的 Pages 来源已由管理员设置为 **GitHub Actions**（**Settings → Pages → Build and deployment → Source**）。工作流核对该设置，并通过 GitHub 自带的 `GITHUB_TOKEN` 与 OIDC 发布，不需要额外配置部署密钥。构建任务只读仓库，部署任务单独获得 Pages 写入权限；Actions 版本固定到提交 SHA。若在新仓库复用本工作流，需先启用 Pages 并选择 GitHub Actions 来源；自动切换被 GitHub 拒绝时会明确报告权限警告。
 

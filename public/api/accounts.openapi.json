@@ -1,0 +1,1100 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "赫特维拉独立用户 API",
+    "version": "1.0.0",
+    "description": "部署到 Supabase 后使用。替换 projectRef，并携带公开 apikey 与用户访问令牌。guest/admin 由数据库控制，禁止向普通客户端提供 service_role 或 secret key。注册必须由用户完成 Turnstile；其余授权操作可通过 HTTP 直接调用。"
+  },
+  "servers": [
+    {
+      "url": "https://{projectRef}.supabase.co",
+      "variables": {
+        "projectRef": {
+          "default": "YOUR_PROJECT_REF",
+          "description": "实际 SUPABASE_PROJECT_ID"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/auth/v1/token": {
+      "post": {
+        "operationId": "createSession",
+        "summary": "邮箱密码登录，或刷新会话",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "grant_type",
+            "required": true,
+            "description": "password 或 refresh_token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；Data API 修改后仍需检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或业务约束错误"
+          },
+          "401": {
+            "description": "未认证"
+          },
+          "403": {
+            "description": "无权限"
+          },
+          "429": {
+            "description": "请求过于频繁"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string",
+                        "format": "email"
+                      },
+                      "password": {
+                        "type": "string",
+                        "format": "password"
+                      }
+                    },
+                    "required": [
+                      "email",
+                      "password"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "refresh_token": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "refresh_token"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/v1/user": {
+      "get": {
+        "operationId": "getAuthUser",
+        "summary": "读取当前 Auth 用户",
+        "security": [
+          {
+            "apiKey": [],
+            "accessToken": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功；Data API 修改后仍需检查返回行数。"
+          },
+          "400": {
+            "description": "参数或业务约束错误"
+          },
+          "401": {
+            "description": "未认证"
+          },
+          "403": {
+            "description": "无权限"
+          },
+          "429": {
+            "description": "请求过于频繁"
+          }
+        }
+      },
+      "put": {
+        "operationId": "changePassword",
+        "summary": "修改密码；服务器强制检查旧密码",
+        "security": [
+          {
+            "apiKey": [],
+            "accessToken": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功；Data API 修改后仍需检查返回行数。"
+          },
+          "400": {
+            "description": "参数或业务约束错误"
+          },
+          "401": {
+            "description": "未认证"
+          },
+          "403": {
+            "description": "无权限"
+          },
+          "429": {
+            "description": "请求过于频繁"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 72,
+                    "format": "password",
+                    "description": "同时不超过72 UTF-8字节"
+                  },
+                  "current_password": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                },
+                "required": [
+                  "password",
+                  "current_password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/v1/logout": {
+      "post": {
+        "operationId": "logout",
+        "summary": "注销当前会话",
+        "security": [
+          {
+            "apiKey": [],
+            "accessToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "description": "使用 local",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "成功；Data API 修改后仍需检查返回行数。"
+          },
+          "400": {
+            "description": "参数或业务约束错误"
+          },
+          "401": {
+            "description": "未认证"
+          },
+          "403": {
+            "description": "无权限"
+          },
+          "429": {
+            "description": "请求过于频繁"
+          }
+        }
+      }
+    },
+    "/rest/v1/account_profiles": {
+      "get": {
+        "operationId": "listProfiles",
+        "summary": "guest 仅本人；admin 可读取全部用户",
+        "security": [
+          {
+            "apiKey": [],
+            "accessToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "select",
+            "required": false,
+            "description": "PostgREST 字段列表",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "description": "建议 created_at.desc,id.asc",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "description": "每页条数，建议20",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "description": "分页偏移量",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "description": "count=exact 获得 Content-Range；写操作 return=representation 返回修改行。"
+          },
+          {
+            "in": "query",
+            "name": "id",
+            "required": false,
+            "description": "可选 eq.<用户 UUID>",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；Data API 修改后仍需检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Profile"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或业务约束错误"
+          },
+          "401": {
+            "description": "未认证"
+          },
+          "403": {
+            "description": "无权限"
+          },
+          "429": {
+            "description": "请求过于频繁"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateNickname",
+        "summary": "仅修改本人的昵称",
+        "security": [
+          {
+            "apiKey": [],
+            "accessToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "description": "eq.<本人的 UUID>",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；Data API 修改后仍需检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Profile"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或业务约束错误"
+          },
+          "401": {
+            "description": "未认证"
+          },
+          "403": {
+            "description": "无权限"
+          },
+          "429": {
+            "description": "请求过于频繁"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nickname": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50
+                  }
+                },
+                "required": [
+                  "nickname"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/v1/account_invitations": {
+      "get": {
+        "operationId": "listInvitations",
+        "summary": "admin 读取邀请码全部字段",
+        "security": [
+          {
+            "apiKey": [],
+            "accessToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "select",
+            "required": false,
+            "description": "PostgREST 字段列表",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "description": "建议 created_at.desc,id.asc",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "description": "每页条数，建议20",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "description": "分页偏移量",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "description": "count=exact 获得 Content-Range；写操作 return=representation 返回修改行。"
+          },
+          {
+            "in": "query",
+            "name": "deleted_at",
+            "required": false,
+            "description": "使用 is.null 隐藏已删除项",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；Data API 修改后仍需检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Invitation"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或业务约束错误"
+          },
+          "401": {
+            "description": "未认证"
+          },
+          "403": {
+            "description": "无权限"
+          },
+          "429": {
+            "description": "请求过于频繁"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createInvitation",
+        "summary": "admin 创建邀请码；省略 code 则自动生成",
+        "security": [
+          {
+            "apiKey": [],
+            "accessToken": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "成功；Data API 修改后仍需检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Invitation"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或业务约束错误"
+          },
+          "401": {
+            "description": "未认证"
+          },
+          "403": {
+            "description": "无权限"
+          },
+          "429": {
+            "description": "请求过于频繁"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9]{6}$"
+                  },
+                  "valid_from": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "valid_until": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "valid_from",
+                  "valid_until"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editInvitation",
+        "summary": "admin 修改有效期、备注和未使用 code",
+        "security": [
+          {
+            "apiKey": [],
+            "accessToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "description": "eq.<邀请码 UUID>",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；Data API 修改后仍需检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Invitation"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数或业务约束错误"
+          },
+          "401": {
+            "description": "未认证"
+          },
+          "403": {
+            "description": "无权限"
+          },
+          "429": {
+            "description": "请求过于频繁"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9]{6}$"
+                  },
+                  "valid_from": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "valid_until": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/v1/rpc/account_delete_invitation": {
+      "post": {
+        "operationId": "deleteInvitation",
+        "summary": "admin 软删除邀请码；code 永久保留避免重新发行",
+        "security": [
+          {
+            "apiKey": [],
+            "accessToken": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "成功；Data API 修改后仍需检查返回行数。"
+          },
+          "400": {
+            "description": "参数或业务约束错误"
+          },
+          "401": {
+            "description": "未认证"
+          },
+          "403": {
+            "description": "无权限"
+          },
+          "429": {
+            "description": "请求过于频繁"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "target": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "target"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/functions/v1/account-register": {
+      "post": {
+        "operationId": "registerAccount",
+        "summary": "通过邀请码与 Turnstile 创建 guest，之后调用登录接口",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功；Data API 修改后仍需检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "输入、CAPTCHA 或邀请码验证失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录或访问令牌失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin 不允许",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "请求过于频繁"
+          },
+          "405": {
+            "description": "仅支持 POST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "请求体过大",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务或配置不可用",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 254
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 8,
+                    "maxLength": 72,
+                    "description": "同时不超过72 UTF-8字节"
+                  },
+                  "nickname": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50
+                  },
+                  "inviteCode": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9]{6}$"
+                  },
+                  "turnstileToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "description": "必须来自真实挑战；action 为 register。"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password",
+                  "nickname",
+                  "inviteCode",
+                  "turnstileToken"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/functions/v1/account-avatar": {
+      "post": {
+        "operationId": "setAvatar",
+        "summary": "上传最大256×256正方形 PNG；空 body 恢复默认头像",
+        "security": [
+          {
+            "apiKey": [],
+            "accessToken": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功；Data API 修改后仍需检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "avatarPath": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "输入、CAPTCHA 或邀请码验证失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录或访问令牌失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin 不允许",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "请求过于频繁"
+          },
+          "405": {
+            "description": "仅支持 POST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "请求体过大",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务或配置不可用",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunctionError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "最大524288字节；正方形，边长1–256像素。"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "apikey",
+        "description": "公开 publishable key 或旧 anon key"
+      },
+      "accessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Auth 返回的用户 access_token"
+      }
+    },
+    "schemas": {
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "nickname": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "user_group": {
+            "type": "string",
+            "enum": [
+              "guest",
+              "admin"
+            ]
+          },
+          "avatar_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "Invitation": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{6}$"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "used_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "used_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "deleted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer"
+          },
+          "token_type": {
+            "type": "string"
+          },
+          "user": {
+            "type": "object"
+          }
+        }
+      },
+      "FunctionError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}
