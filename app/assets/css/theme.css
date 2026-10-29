@@ -76,4 +76,7 @@
   --ds-link: var(--ui-primary);
   --ds-link-underline: color-mix(in oklch, var(--ui-primary) 40%, transparent);
   --ds-search-hover: var(--ds-surface-tint);
+  --ds-crop-line-light: var(--color-canvas-0);
+  --ds-crop-line-dark: var(--color-canvas-950);
+  --ds-crop-shade: color-mix(in srgb, var(--color-canvas-950) 65%, transparent);
 }

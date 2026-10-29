@@ -6,6 +6,7 @@
 @import "./tailwind-theme.css";
 @import "./archive.css";
 @import "./forum.css";
+@import "./account.css";
 
 @source "../../../.generated/content/**/*.md";
 

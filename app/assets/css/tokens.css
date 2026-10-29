@@ -65,6 +65,9 @@
   --ds-forum-font-size: var(--ds-text-copy);
   --ds-forum-leading: var(--ds-leading-copy);
   --ds-forum-paragraph-gap: var(--ds-space-inline);
+  --ds-crop-border-width: var(--ds-focus-width);
+  --ds-crop-handle-size: calc(var(--spacing) * 7);
+  --ds-crop-grip-size: calc(var(--spacing) * 3);
 
   /* Use the same Tailwind breakpoints as Vue utility classes. */
   @variant max-xl {
