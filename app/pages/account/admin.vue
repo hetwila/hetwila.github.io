@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { TableColumn } from '@nuxt/ui'
 import { inviteStatus, type AccountInvitation, type AccountProfile } from '#shared/account'
 import AccountFrame from '~/components/account/AccountFrame.vue'
+import CommentAdmin from '~/components/comments/CommentAdmin.vue'
 const account = useAccount(), toast = useToast()
 const tab = ref('invitations'), invitations = ref<AccountInvitation[]>([]), users = ref<AccountProfile[]>([])
 const page = ref(1), total = ref(0), loading = ref(false), error = ref(''), saving = ref(false), open = ref(false), deleting = ref<AccountInvitation | null>(null)
@@ -21,7 +22,7 @@ const invitationColumns: TableColumn<AccountInvitation>[] = [
 const userColumns: TableColumn<AccountProfile>[] = [{id:'avatar',header:'头像'},{accessorKey:'nickname',header:'昵称'},{accessorKey:'email',header:'邮箱'},{accessorKey:'user_group',header:'用户组'},{accessorKey:'created_at',header:'注册时间',cell:({row})=>date(row.original.created_at)},{accessorKey:'id',header:'用户 ID'}]
 let requestVersion = 0
 async function load() {
-  if (!account.isAdmin.value) return
+  if (!account.isAdmin.value || tab.value === 'comments') return
   const version = ++requestVersion
   loading.value = true; error.value = ''
   try {
@@ -72,11 +73,13 @@ async function remove() {
 }
 </script>
 <template>
-  <AccountFrame title="管理中心" description="管理邀请码，查看已注册的用户。">
+  <AccountFrame title="管理中心" description="管理邀请码、注册用户和评论区。">
     <UPageCard v-if="!account.user.value" title="请先登录"><UButton to="/account/login?returnTo=%2Faccount%2Fadmin">前往登录</UButton></UPageCard>
     <UAlert v-else-if="!account.isAdmin.value" title="仅 admin 用户组可以访问管理中心。" color="neutral" />
     <div v-else class="space-y-stack">
-      <UTabs v-model="tab" :items="[{label:'邀请码',value:'invitations'},{label:'注册用户',value:'users'}]" :content="false" />
+      <UTabs v-model="tab" :items="[{label:'邀请码',value:'invitations'},{label:'注册用户',value:'users'},{label:'评论区',value:'comments'}]" :content="false" />
+      <CommentAdmin v-if="tab === 'comments'" />
+      <template v-else>
       <div class="flex flex-wrap justify-between gap-inline"><p class="text-caption text-muted">共 {{ total }} 条 · 时间显示为 {{ timezone }}</p><div class="flex gap-2"><UButton color="neutral" variant="outline" :loading="loading" @click="load">刷新</UButton><UButton v-if="tab==='invitations'" @click="edit()">创建邀请码</UButton></div></div>
       <UAlert v-if="error" :title="error" color="error" />
       <UTable v-if="tab==='invitations'" :data="invitations" :columns="invitationColumns" :loading="loading" empty="暂无邀请码。" class="border border-default rounded-lg">
@@ -88,6 +91,7 @@ async function remove() {
         <template #user_group-cell="{row}"><UBadge variant="soft">{{row.original.user_group}}</UBadge></template>
       </UTable>
       <UPagination v-if="total>20" v-model:page="page" :total="total" :items-per-page="20" :sibling-count="1" />
+      </template>
     </div>
     <UModal v-model:open="open" :title="editing ? '邀请码详情与修改' : '创建邀请码'" description="有效期按当前时区输入。每个邀请码只能成功注册一次。">
       <template #body>

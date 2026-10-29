@@ -1,4 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
+import { commentFixture } from './helpers/comments'
 import { test, expect } from '@playwright/test'
 
 test('theme follows the system, respects an explicit choice, and survives reloads and navigation', async ({ page }) => {
@@ -31,6 +32,7 @@ test('theme follows the system, respects an explicit choice, and survives reload
 for (const mode of ['light', 'dark'] as const) {
   test(`${mode} mode keeps pages and search accessible, including text contrast`, async ({ page }) => {
     test.setTimeout(60_000)
+    await commentFixture(page)
     await page.emulateMedia({ colorScheme: mode })
     for (const path of ['/', '/wiki/禁制', '/wiki/诺菲莉亚·薇尔希·伊拉奈德', '/wiki', '/timeline', '/reference', '/reference/公共禁制纪元初期（H31）', '/stories', '/stories/第一次选择', '/wiki/1747年议长选举']) {
       await page.goto(path)

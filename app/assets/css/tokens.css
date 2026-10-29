@@ -68,6 +68,9 @@
   --ds-crop-border-width: var(--ds-focus-width);
   --ds-crop-handle-size: calc(var(--spacing) * 7);
   --ds-crop-grip-size: calc(var(--spacing) * 3);
+  --ds-comment-text: var(--ds-text-copy);
+  --ds-comment-code-height: calc(var(--spacing) * 64);
+  --ds-comment-image-height: calc(var(--spacing) * 48);
 
   /* Use the same Tailwind breakpoints as Vue utility classes. */
   @variant max-xl {

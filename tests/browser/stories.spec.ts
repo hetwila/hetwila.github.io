@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test'
+import { commentFixture } from './helpers/comments'
 import { readFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { markdownText } from '../../scripts/lib/markdown'
+test.beforeEach(async ({ page }) => { await commentFixture(page) })
 
 test('read the full six-section story without JavaScript and follow links in both directions', async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 375, height: 812 } })

@@ -2,6 +2,7 @@
 import catalog from '../../../.generated/catalog.json'
 import graph from '../../../.generated/relations.json'
 import events from '../../../.generated/events.json'
+import ArticleComments from '~/components/comments/ArticleComments.vue'
 
 const route = useRoute()
 const entry = computed(() => catalog.find(item => item.entityType === 'story' && item.routeKey === route.params.slug))
@@ -19,6 +20,7 @@ useHead(() => ({ link: [{ rel: 'canonical', href: `https://hetwila.github.io${en
   <main v-if="story && entry" id="main" class="shell py-page-block">
     <UButton to="/stories" color="neutral" variant="link" icon="i-lucide-arrow-left" class="mb-stack p-0 text-caption">返回故事书架</UButton>
     <UPage :ui="{ right: 'hidden lg:block' }">
+      <div class="mx-auto w-full max-w-reading">
       <article class="article-main mx-auto w-full max-w-reading" data-pagefind-body data-pagefind-filter="类型:故事">
         <header class="article-header">
           <p class="eyebrow mb-5">A STORY OF HETWILA</p>
@@ -40,6 +42,8 @@ useHead(() => ({ link: [{ rel: 'canonical', href: `https://hetwila.github.io${en
         </section>
         <ContentSources :sources="story.sourceRefs" :markdown-url="entry.markdownUrl" :json-url="entry.jsonUrl" :original-markdown-url="entry.originalMarkdownUrl" :original-sha256="entry.originalSha256" story />
       </article>
+      <ArticleComments :article-uid="entry.uid" />
+      </div>
       <template #right><UContentToc :links="toc" title="故事目录" highlight /></template>
     </UPage>
   </main>
