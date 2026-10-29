@@ -7,6 +7,7 @@
 @import "./archive.css";
 @import "./forum.css";
 @import "./account.css";
+@import "./comments.css";
 
 @source "../../../.generated/content/**/*.md";
 

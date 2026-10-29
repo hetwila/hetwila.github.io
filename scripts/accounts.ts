@@ -5,6 +5,8 @@ import { readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { spawn } from 'node:child_process'
 import { publicAccountConfig } from '../shared/account-config.ts'
+import { readPublicContent } from './lib/content.ts'
+import { commentRegistrySQL } from './lib/comment-registry.ts'
 
 const required=['SUPABASE_PROJECT_ID','SUPABASE_URL','SUPABASE_KEY','SUPABASE_SECRET_KEY','SUPABASE_ACCESS_TOKEN','NUXT_PUBLIC_TURNSTILE_SITE_KEY','NUXT_TURNSTILE_SECRET_KEY']
 const command=process.argv[2] || 'check'
@@ -20,7 +22,7 @@ async function main() {
     for(const name of required) console.log(`${name}: ${process.env[name]?'已加载':'未加载'}`)
     configuration(); return
   }
-  if(!['deploy','bootstrap'].includes(command)) throw new Error('用法：pnpm accounts:check / accounts:deploy / accounts:bootstrap <管理员邮箱>')
+  if(!['deploy','comments','bootstrap'].includes(command)) throw new Error('用法：pnpm accounts:check / accounts:deploy / comments:deploy / accounts:bootstrap <管理员邮箱>')
   const config=configuration()
   const origins=(process.env.ACCOUNT_ALLOWED_ORIGINS || 'https://hetwila.github.io').split(',').map(o=>o.trim())
   for(const origin of origins) { const url=new URL(origin); if(url.origin!==origin || (url.protocol!=='https:' && !['localhost','127.0.0.1'].includes(url.hostname))) throw new Error('ACCOUNT_ALLOWED_ORIGINS 必须是以逗号分隔的网站 Origin。') }
@@ -37,7 +39,8 @@ async function main() {
       child.on('exit',code=>code===0?ok():fail(new Error(`Supabase CLI 未完成，退出码 ${code}。`)))
     })
   }
-  if(command==='deploy') {
+  if(command==='deploy' || command==='comments') {
+    if(command==='deploy') {
     // Read first, then change only this feature's Auth settings and migrations.
     const existing=await management('/config/auth')
     if(existing.security_captcha_enabled) throw new Error('项目已启用 Auth 内置 CAPTCHA。当前设计只在注册 Edge Function 验证 Turnstile；请先核对现有登录客户端的 CAPTCHA 策略。')
@@ -46,6 +49,7 @@ async function main() {
     const verified=await management('/config/auth')
     for(const [key,value] of Object.entries(settings)) if(verified[key]!==value) throw new Error(`Auth 配置 ${key} 未生效，已停止部署。`)
     console.log('Auth 设置已应用并复核。')
+    }
     const history: {name?:string,version:string}[]=await management('/database/migrations')
     for(const file of readdirSync('supabase/migrations').filter(f=>f.endsWith('.sql')).sort()) {
       const name=file.slice(0,-4),query=readFileSync(`supabase/migrations/${file}`,'utf8')
@@ -59,17 +63,23 @@ async function main() {
       await management('/database/migrations','POST',{name,query:`-- ${marker}\n${query}`})
       console.log(`已应用 ${file}`)
     }
+    const documents=await readPublicContent({wiki:resolve('content/wiki'),stories:resolve('content/stories')})
+    await sql(commentRegistrySQL(documents))
+    console.log('公开故事与评论区的 UID 关联已同步，现有开关和评论保持不变。')
+    if(command==='deploy') {
     await management('/secrets','POST',[
       {name:'TURNSTILE_SECRET_KEY',value:process.env.NUXT_TURNSTILE_SECRET_KEY},
       {name:'ACCOUNT_SECRET_KEY',value:process.env.SUPABASE_SECRET_KEY},
       {name:'ACCOUNT_ALLOWED_ORIGINS',value:origins.join(',')},
     ])
     await cli(['functions','deploy','account-register','account-avatar','--project-ref',config.ref,'--use-api'])
+    }
     // Use HTTPS like migrations; cloud executors may not have direct database TCP access.
     const advisors=await management('/advisors/security')
     if(!Array.isArray(advisors?.lints)) throw new Error('安全 advisors 返回格式异常，已停止部署。')
     for(const lint of advisors.lints) console.log(`安全 advisor：${lint.level} ${lint.name}`)
     if(advisors.lints.some((lint:{level:string})=>lint.level==='ERROR')) throw new Error('安全 advisors 检测到错误，请修复后重新部署。')
+    if(command==='comments') { console.log('评论数据库部署与关联同步完成。'); return }
     const probe=await fetch(`${config.url}/functions/v1/account-avatar`,{method:'POST',headers:{apikey:process.env.SUPABASE_KEY!,Origin:origins[0]!}})
     if(probe.status!==401) throw new Error('头像接口的未登录访问验证未通过，请检查函数部署日志。')
     console.log('后端部署完成。Pages 构建仍需配置三个公开变量，详见 docs/用户系统.md。')

@@ -3,6 +3,8 @@ import { before, after, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createHmac } from 'node:crypto'
+import { commentRegistrySQL } from '../../scripts/lib/comment-registry.ts'
+import { readPublicContent } from '../../scripts/lib/content.ts'
 import { readFileSync, readdirSync } from 'node:fs'
 
 const prefix = `hetwila-accounts-test-${process.pid}`
@@ -144,4 +146,100 @@ test('admin can create, edit, inspect and delete invitations and list all users'
   assert.notEqual((await register('deleted@example.test',code.code)).status,200)
   assert.equal((await rest('/account_invitations','POST',{code:code.code,valid_from:code.valid_from,valid_until:code.valid_until},adminToken)).status,409)
   assert.equal((await rest('/account_invitations?code=eq.GUEST1','PATCH',{code:'RESET1'},adminToken)).status,400)
+})
+
+let sectionId = '', guestCommentId = '', adminCommentId = ''
+test('independent comment sections allow both groups to post, expose only public author fields and reject anonymous writes', async () => {
+  assert.equal((await rest('/comment_sections', 'POST', {title:'Forbidden'}, guestToken)).status, 403)
+  const section = await rest('/comment_sections', 'POST', {title:'Independent discussion'}, adminToken)
+  assert.equal(section.status, 201, JSON.stringify(section.body)); sectionId = section.body[0].id
+  assert.equal((await rest('/rpc/comment_can_post','POST',{p_section_id:sectionId},guestToken)).body,true)
+  for (const bearer of [guestToken, adminToken]) {
+    const created = await rest('/article_comments','POST',{section_id:sectionId,body:'# A comment\n\n**Markdown**'},bearer)
+    assert.equal(created.status,201,JSON.stringify(created.body))
+    if(bearer===guestToken)guestCommentId=created.body[0].id;else adminCommentId=created.body[0].id
+  }
+  const result=await rest(`/article_comments?section_id=eq.${sectionId}&select=*,author:comment_authors(*)`,'GET',undefined,anonToken)
+  assert.equal(result.status,200);assert.equal(result.body.length,2)
+  assert.deepEqual(Object.keys(result.body[0].author).sort(),['avatar_path','id','nickname'])
+  assert.ok(!JSON.stringify(result.body).includes('@example.test'))
+  assert.ok([401,403].includes((await rest('/article_comments','POST',{section_id:sectionId,body:'Anonymous'},anonToken)).status))
+  assert.equal((await rest('/account_profiles','GET',undefined,anonToken)).status,401)
+})
+test('comment authors can edit/delete only their own text; admin may delete but not rewrite another author', async () => {
+  const path=`/article_comments?id=eq.${guestCommentId}`
+  const before=(await rest(path)).body[0]
+  assert.equal((await rest(path,'PATCH',{body:'Edited **comment**'},guestToken)).status,200)
+  const after=(await rest(path)).body[0]
+  assert.equal(after.created_at,before.created_at);assert.ok(Date.parse(after.updated_at)>Date.parse(before.updated_at))
+  for(const body of [{author_id:adminId},{section_id:crypto.randomUUID()},{created_at:'2020-01-01'},{updated_at:'2020-01-01'},{id:crypto.randomUUID()}]) {
+    assert.equal((await rest(path,'PATCH',body,guestToken)).status,403)
+  }
+  assert.deepEqual((await rest(path,'PATCH',{body:'Admin rewrite'},adminToken)).body,[])
+  assert.deepEqual((await rest(`/article_comments?id=eq.${adminCommentId}`,'PATCH',{body:'Other rewrite'},guestToken)).body,[])
+  assert.deepEqual((await rest(`/article_comments?id=eq.${adminCommentId}`,'DELETE',undefined,guestToken)).body,[])
+  assert.equal((await rest('/article_comments','POST',{section_id:sectionId,author_id:adminId,body:'Forged author'},guestToken)).status,403)
+  for(const body of ['   \n\t','x'.repeat(10001)])assert.equal((await rest(path,'PATCH',{body},guestToken)).status,400)
+  const disposable=(await rest('/article_comments','POST',{section_id:sectionId,body:'Remove me'},guestToken)).body[0]
+  assert.equal((await rest(`/article_comments?id=eq.${disposable.id}`,'DELETE',undefined,adminToken)).body.length,1)
+})
+test('section and article switches independently enforce new posting, including direct API calls and standalone embedding', async () => {
+  await rest('/comment_articles','POST',{article_uid:'story:integration',section_id:sectionId,title:'Fixture story',path:'/stories/fixture'})
+  assert.deepEqual((await rest(`/comment_sections?id=eq.${sectionId}`,'PATCH',{posting_enabled:false},guestToken)).body,[])
+  assert.deepEqual((await rest('/comment_articles?article_uid=eq.story:integration','PATCH',{comments_enabled:false},guestToken)).body,[])
+  for(const [table, filter, field] of [['comment_sections',`id=eq.${sectionId}`,'posting_enabled'],['comment_articles','article_uid=eq.story:integration','comments_enabled']]) {
+    assert.equal((await rest(`/${table}?${filter}`,'PATCH',{[field!]:false},adminToken)).status,200)
+    for(const bearer of [guestToken,adminToken]) {
+      assert.equal((await rest('/rpc/comment_can_post','POST',{p_section_id:sectionId},bearer)).body,false)
+      assert.equal((await rest('/article_comments','POST',{section_id:sectionId,body:'Bypass closed section'},bearer)).status,403)
+    }
+    assert.equal((await rest(`/article_comments?id=eq.${guestCommentId}`,'PATCH',{body:`Correction while ${field} is closed`},guestToken)).body.length,1)
+    assert.equal((await rest(`/article_comments?section_id=eq.${sectionId}`,'GET',undefined,anonToken)).body.length,2)
+    await rest(`/${table}?${filter}`,'PATCH',{[field!]:true},adminToken)
+  }
+  assert.equal((await rest('/comment_articles?article_uid=eq.story:integration','PATCH',{section_id:crypto.randomUUID()},adminToken)).status,403)
+  assert.equal((await rest(`/article_comments?id=eq.${guestCommentId}`,'DELETE',undefined,guestToken)).body.length,1)
+})
+test('comment posting checks the stored group permission, never writable metadata', async () => {
+  sql("update public.comment_group_permissions set can_post=false where user_group='guest'")
+  assert.equal((await rest('/rpc/comment_can_post','POST',{p_section_id:sectionId},guestToken)).body,false)
+  assert.equal((await rest('/article_comments','POST',{section_id:sectionId,body:'Metadata says admin'},guestToken)).status,403)
+  assert.equal((await rest('/article_comments','POST',{section_id:sectionId,body:'Real admin'},adminToken)).status,201)
+  assert.equal((await rest('/comment_group_permissions?user_group=eq.guest','PATCH',{can_post:true},guestToken)).status,403)
+  sql("update public.comment_group_permissions set can_post=true where user_group='guest'")
+})
+test('public comment author projection follows nickname/avatar changes without exposing other accounts', async () => {
+  await rest('/article_comments','POST',{section_id:sectionId,body:'Public author'},guestToken)
+  await rest(`/account_profiles?id=eq.${guestId}`,'PATCH',{nickname:'Public nickname'},guestToken)
+  await rest(`/account_profiles?id=eq.${guestId}`,'PATCH',{avatar_path:`${guestId}/fixture.png`})
+  const author=(await rest(`/comment_authors?id=eq.${guestId}`,'GET',undefined,anonToken)).body[0]
+  assert.equal(author.nickname,'Public nickname');assert.equal(author.avatar_path,`${guestId}/fixture.png`)
+  assert.equal((await rest(`/comment_authors?id=eq.${guestId}`,'PATCH',{nickname:'Forged'},guestToken)).status,403)
+  const unposted=sql("select id from public.account_profiles where email='retry@example.test'")
+  assert.deepEqual((await rest(`/comment_authors?id=eq.${unposted}`,'GET',undefined,anonToken)).body,[])
+})
+test('comment pagination is stable and deleting an account preserves comments with no writable author', async () => {
+  const section=(await rest('/comment_sections','POST',{title:'Pagination'},adminToken)).body[0]
+  for(let i=0;i<21;i++)await rest('/article_comments','POST',{section_id:section.id,body:`Entry ${i}`},guestToken)
+  const first=await rest(`/article_comments?section_id=eq.${section.id}&order=created_at.asc,id.asc&limit=20&offset=0`,'GET',undefined,anonToken)
+  const last=await rest(`/article_comments?section_id=eq.${section.id}&order=created_at.asc,id.asc&limit=20&offset=20`,'GET',undefined,anonToken)
+  assert.equal(first.body.length,20);assert.equal(last.body.length,1);assert.equal(last.body[0].body,'Entry 20')
+  await invite('GONE01');const created=await register('gone@example.test','GONE01');const bearer=(await login('gone@example.test')).body.access_token
+  const comment=(await rest('/article_comments','POST',{section_id:section.id,body:'Retained after account removal'},bearer)).body[0]
+  await auth(`/admin/users/${created.body.id}`,'DELETE')
+  assert.equal((await rest(`/article_comments?id=eq.${comment.id}`,'GET',undefined,anonToken)).body[0].author_id,null)
+  assert.deepEqual((await rest(`/article_comments?id=eq.${comment.id}`,'PATCH',{body:'Deleted user token'},bearer)).body,[])
+  assert.equal((await rest('/article_comments','POST',{section_id:section.id,body:'Deleted user token'},bearer)).status,403)
+})
+test('story registry sync is idempotent, keeps IDs and switches, and registers no encyclopedia or forum articles', async () => {
+  const documents=await readPublicContent({wiki:'content/wiki',stories:'content/stories'})
+  sql(commentRegistrySQL(documents))
+  const before=(await rest('/comment_articles?article_uid=eq.story:第一次选择')).body[0]
+  await rest(`/comment_sections?id=eq.${before.section_id}`,'PATCH',{posting_enabled:false},adminToken)
+  await rest('/comment_articles?article_uid=eq.story:第一次选择','PATCH',{comments_enabled:false},adminToken)
+  sql(commentRegistrySQL(documents))
+  const after=(await rest('/comment_articles?article_uid=eq.story:第一次选择')).body[0]
+  assert.equal(after.section_id,before.section_id);assert.equal(after.comments_enabled,false)
+  assert.equal((await rest(`/comment_sections?id=eq.${before.section_id}`)).body[0].posting_enabled,false)
+  assert.equal(sql("select count(*) from public.comment_articles where article_uid not like 'story:%'"),'0')
 })

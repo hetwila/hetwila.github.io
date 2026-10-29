@@ -1,0 +1,26 @@
+.comment-markdown {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--ds-comment-text);
+  line-height: var(--ds-leading-copy);
+  color: var(--ui-text);
+}
+.comment-markdown > * + * { margin-top: var(--ds-space-inline); }
+.comment-markdown p { white-space: pre-wrap; }
+.comment-markdown .comment-markdown-heading { font-size: inherit; font-weight: var(--font-weight-semibold); color: var(--ui-text-highlighted); }
+.comment-markdown a { color: var(--ds-link); text-decoration: underline; }
+.comment-markdown strong { font-weight: var(--font-weight-semibold); }
+.comment-markdown ul, .comment-markdown ol { padding-inline-start: var(--ds-space-stack); }
+.comment-markdown ul { list-style: disc; }
+.comment-markdown ol { list-style: decimal; }
+.comment-markdown .comment-task-item { list-style: none; }
+.comment-markdown blockquote { border-inline-start: var(--ds-quote-border-width) solid var(--ui-border-accented); padding-inline-start: var(--ds-space-inline); color: var(--ui-text-toned); }
+.comment-markdown code { font-family: var(--font-mono); font-size: var(--ds-text-detail); background: var(--ui-bg-muted); border-radius: var(--ui-radius); padding-inline: calc(var(--spacing) * 0.5); }
+.comment-markdown pre { max-width: 100%; max-height: var(--ds-comment-code-height); overflow: auto; padding: var(--ds-space-inline); background: var(--ui-bg-muted); border: var(--ds-border-width) solid var(--ui-border); border-radius: var(--ui-radius); }
+.comment-markdown pre code { padding: 0; white-space: pre; }
+.comment-markdown img { display: block; max-width: 100%; max-height: var(--ds-comment-image-height); object-fit: contain; border-radius: var(--ui-radius); }
+.comment-markdown hr { border-color: var(--ui-border); }
+.comment-markdown .comment-table-scroll { max-width: 100%; overflow: auto; }
+.comment-markdown table { min-width: 100%; border-collapse: collapse; font-size: var(--ds-text-detail); }
+.comment-markdown th, .comment-markdown td { border: var(--ds-border-width) solid var(--ui-border); padding: var(--ds-space-inline); text-align: start; }
+.comment-markdown th { font-weight: var(--font-weight-semibold); background: var(--ui-bg-muted); }

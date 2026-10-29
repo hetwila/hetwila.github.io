@@ -1,0 +1,966 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "赫特维拉读者评论 API",
+    "version": "1.0.0",
+    "description": "评论区通过 UUID 独立工作，故事通过稳定 UID 关联。评论属于真实读者投稿，不是世界观事实。读取使用公开 apikey，写操作另带用户会话；不要给普通客户端提供服务 secret。Markdown 原文是不可信内容，渲染器须限制标签、URL 和样式。"
+  },
+  "servers": [
+    {
+      "url": "https://{projectRef}.supabase.co",
+      "variables": {
+        "projectRef": {
+          "default": "YOUR_PROJECT_REF"
+        }
+      }
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apikey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "apikey"
+      },
+      "userSession": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Author": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "avatar_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "nickname",
+          "avatar_path"
+        ],
+        "additionalProperties": false
+      },
+      "Section": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "posting_enabled": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "posting_enabled"
+        ],
+        "additionalProperties": false
+      },
+      "Article": {
+        "type": "object",
+        "properties": {
+          "article_uid": {
+            "type": "string",
+            "pattern": "^story:"
+          },
+          "section_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "comments_enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "article_uid",
+          "section_id",
+          "comments_enabled"
+        ],
+        "additionalProperties": false
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "section_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "readOnly": true
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "author": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Author"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "section_id",
+          "author_id",
+          "body",
+          "created_at",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      },
+      "CreateComment": {
+        "type": "object",
+        "properties": {
+          "section_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "section_id",
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "EditComment": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "paths": {
+    "/rest/v1/comment_sections": {
+      "get": {
+        "operationId": "list_comment_sections",
+        "summary": "读取 comment_sections",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<评论区 UUID>"
+          },
+          {
+            "in": "query",
+            "name": "select",
+            "schema": {
+              "type": "string"
+            },
+            "description": "PostgREST 字段选择；评论可嵌入 author:comment_authors(nickname,avatar_path)。"
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string"
+            },
+            "description": "评论使用 created_at.asc,id.asc。"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "string"
+            },
+            "description": "每页20条。"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "string"
+            },
+            "description": "从0开始的分页偏移。"
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "example": "count=exact",
+            "description": "用 count=exact 获取 Content-Range 总数。"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "公开读取；关闭投稿不会隐藏历史评论。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Section"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "create_comment_sections",
+        "summary": "管理员创建独立评论区",
+        "security": [
+          {
+            "apikey": [],
+            "userSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "example": "return=representation",
+            "description": "要求返回实际修改的行，避免将 RLS 的空结果误判为成功。"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "title"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "成功；写操作必须检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Section"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "用户组、开关或管理员权限不允许。"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "update_comment_sections",
+        "summary": "管理员调整评论区投稿状态",
+        "security": [
+          {
+            "apikey": [],
+            "userSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<目标唯一 ID>"
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "example": "return=representation",
+            "description": "要求返回实际修改的行，避免将 RLS 的空结果误判为成功。"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "posting_enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "posting_enabled"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功；写操作必须检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Section"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "禁止更新未授权列。"
+          }
+        }
+      }
+    },
+    "/rest/v1/comment_articles": {
+      "get": {
+        "operationId": "list_comment_articles",
+        "summary": "读取 comment_articles",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "article_uid",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<稳定故事 UID>"
+          },
+          {
+            "in": "query",
+            "name": "section_id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<评论区 UUID>"
+          },
+          {
+            "in": "query",
+            "name": "select",
+            "schema": {
+              "type": "string"
+            },
+            "description": "PostgREST 字段选择；评论可嵌入 author:comment_authors(nickname,avatar_path)。"
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string"
+            },
+            "description": "评论使用 created_at.asc,id.asc。"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "string"
+            },
+            "description": "每页20条。"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "string"
+            },
+            "description": "从0开始的分页偏移。"
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "example": "count=exact",
+            "description": "用 count=exact 获取 Content-Range 总数。"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "公开读取；关闭投稿不会隐藏历史评论。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Article"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "update_comment_articles",
+        "summary": "管理员调整文章评论状态",
+        "security": [
+          {
+            "apikey": [],
+            "userSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "article_uid",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<目标唯一 ID>"
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "example": "return=representation",
+            "description": "要求返回实际修改的行，避免将 RLS 的空结果误判为成功。"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "comments_enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "comments_enabled"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功；写操作必须检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Article"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "禁止更新未授权列。"
+          }
+        }
+      }
+    },
+    "/rest/v1/article_comments": {
+      "get": {
+        "operationId": "list_article_comments",
+        "summary": "读取 article_comments",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "section_id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<评论区 UUID>"
+          },
+          {
+            "in": "query",
+            "name": "select",
+            "schema": {
+              "type": "string"
+            },
+            "description": "PostgREST 字段选择；评论可嵌入 author:comment_authors(nickname,avatar_path)。"
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string"
+            },
+            "description": "评论使用 created_at.asc,id.asc。"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "string"
+            },
+            "description": "每页20条。"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "string"
+            },
+            "description": "从0开始的分页偏移。"
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "example": "count=exact",
+            "description": "用 count=exact 获取 Content-Range 总数。"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "公开读取；关闭投稿不会隐藏历史评论。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Comment"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "create_article_comments",
+        "summary": "登录用户投稿；用户组及评论区／文章开关均由数据库校验",
+        "security": [
+          {
+            "apikey": [],
+            "userSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "example": "return=representation",
+            "description": "要求返回实际修改的行，避免将 RLS 的空结果误判为成功。"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateComment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "成功；写操作必须检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Comment"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "用户组、开关或管理员权限不允许。"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "update_article_comments",
+        "summary": "仅作者本人修改正文；管理员不能改写他人评论",
+        "security": [
+          {
+            "apikey": [],
+            "userSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<目标唯一 ID>"
+          },
+          {
+            "in": "query",
+            "name": "updated_at",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<上次读取的更新时间>，用于检测编辑冲突。"
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "example": "return=representation",
+            "description": "要求返回实际修改的行，避免将 RLS 的空结果误判为成功。"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditComment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功；写操作必须检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Comment"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "禁止更新未授权列。"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_comment",
+        "summary": "作者删除本人评论；管理员删除任意评论",
+        "security": [
+          {
+            "apikey": [],
+            "userSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<评论 UUID>"
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "example": "return=representation",
+            "description": "要求返回实际修改的行，避免将 RLS 的空结果误判为成功。"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；写操作必须检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Comment"
+                  }
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "已处理；未要求返回实际行时不能据此推断删除了目标。"
+          }
+        }
+      }
+    },
+    "/rest/v1/comment_authors": {
+      "get": {
+        "operationId": "list_comment_authors",
+        "summary": "读取 comment_authors",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<作者 UUID>；仅返回仍有评论的作者。"
+          },
+          {
+            "in": "query",
+            "name": "select",
+            "schema": {
+              "type": "string"
+            },
+            "description": "PostgREST 字段选择；评论可嵌入 author:comment_authors(nickname,avatar_path)。"
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string"
+            },
+            "description": "评论使用 created_at.asc,id.asc。"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "string"
+            },
+            "description": "每页20条。"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "string"
+            },
+            "description": "从0开始的分页偏移。"
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "schema": {
+              "type": "string"
+            },
+            "example": "count=exact",
+            "description": "用 count=exact 获取 Content-Range 总数。"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "公开读取；关闭投稿不会隐藏历史评论。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Author"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/v1/rpc/comment_can_post": {
+      "post": {
+        "operationId": "comment_can_post",
+        "summary": "检查当前会话对指定评论区的有效投稿权限",
+        "security": [
+          {
+            "apikey": [],
+            "userSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_section_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "p_section_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "同时检查数据库中的用户组、评论区和关联文章开关。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/v1/comment_group_permissions": {
+      "get": {
+        "operationId": "list_comment_group_permissions",
+        "summary": "已登录用户读取用户组评论能力；普通会话不可修改",
+        "security": [
+          {
+            "apikey": [],
+            "userSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；写操作必须检查返回行数。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "user_group": {
+                        "enum": [
+                          "guest",
+                          "admin"
+                        ]
+                      },
+                      "can_post": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "user_group",
+                      "can_post"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

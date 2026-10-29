@@ -22,6 +22,7 @@
     "test:accounts:integration": "node --test tests/accounts/integration.ts",
     "accounts:check": "node --env-file-if-exists=.env scripts/accounts.ts check",
     "accounts:deploy": "node --env-file-if-exists=.env scripts/accounts.ts deploy",
+    "comments:deploy": "node --env-file-if-exists=.env scripts/accounts.ts comments",
     "accounts:bootstrap": "node --env-file-if-exists=.env scripts/accounts.ts bootstrap",
     "test": "pnpm test:content && pnpm generate && pnpm test:e2e",
     "postinstall": "nuxt prepare"

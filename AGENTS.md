@@ -31,7 +31,7 @@
 - `sources/releases/3.0.3/` 是来源证据，不随页面润色改动。保留 UID、来源锚点、纪年 0、事实状态与双向关联。新增来源通过 `sources/reading-map.json` 进入公开允许列表；禁止为补齐覆盖率猜写缺失资料。
 - 故事保留作者原稿及哈希；阅读版只整理标题和链接，构建检查正文一致。以 `story-local`、`fiction` 与本篇 `scopeUid` 区别于百科事实；`depicts` 从故事指向事件，反链自动生成。人物百科标题使用原设定中的完整姓名，简称进入别名。
 - 论坛独立于百科／故事关系图，不添加概念互链或相关推荐。每帖一个中文 Markdown；原稿及哈希保存在 `sources/forum/`，构建逐层核对昵称与正文。固定每页20层，楼号不可重排；只看楼主保留原号，永久链接回到完整讨论。机器目录用独立 `forum.json`，发言保持 `in-world-discussion` 和本帖 `scopeUid`。
-- 不添加虚构作品、帖子、读者或互动统计充当真实内容。完整附件已保存于 `sources/archives/`；新增内容先解压并核对对应责任原文。Supabase 当前只管理独立站点账号，不将账号与世界内论坛虚构身份混用。
+- 不添加虚构作品、帖子、读者或互动统计充当真实内容。完整附件已保存于 `sources/archives/`；新增内容先解压并核对对应责任原文。Supabase 管理独立站点账号及读者评论，不将账号与世界内论坛虚构身份混用。评论只接入故事，组件独立性、投稿开关和 Markdown 边界见 [评论系统](docs/评论系统.md)。
 - 账号权限必须由数据库 grants、RLS 和 Auth／Edge 服务校验。不要根据 `user_metadata`、前端路由或可写资料决定 admin 权限；普通会话不能改用户组或头像路径。保留注册事务的并发与回滚约束，以及 Auth 强制旧密码设置。
 - `SUPABASE_SECRET_KEY`、管理 PAT、Turnstile secret 不进入 public runtimeConfig、静态输出或日志。未加载 Secrets 时继续本地工作，但不得宣称已部署；Codex 与 GitHub Actions 是两个独立的配置环境。
 - 修改账号实现时运行 `pnpm test:accounts`；其 Docker 容器为测试临时资源，不连接生产项目。新增迁移不可修改已部署历史；部署统一使用文档中的 Management API 工作流。
