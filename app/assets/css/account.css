@@ -1,0 +1,34 @@
+/* Both light and dark strokes stay visible against arbitrary uploaded images. */
+.avatar-cropper cropper-canvas { height: 100%; overflow: visible; }
+.avatar-cropper[aria-busy="true"] { pointer-events: none; }
+.avatar-cropper cropper-selection {
+  outline: var(--ds-crop-border-width) solid var(--ds-crop-line-light);
+  box-shadow: 0 0 0 calc(var(--ds-crop-border-width) * 2) var(--ds-crop-line-dark),
+    inset 0 0 0 var(--ds-crop-border-width) var(--ds-crop-line-dark);
+}
+.avatar-cropper cropper-handle[action$="-resize"] {
+  width: var(--ds-crop-handle-size);
+  height: var(--ds-crop-handle-size);
+}
+.avatar-cropper cropper-handle[action$="-resize"]::after {
+  width: var(--ds-crop-grip-size);
+  height: var(--ds-crop-grip-size);
+  background: var(--ds-crop-line-light);
+  border: var(--ds-crop-border-width) solid var(--ds-crop-line-dark);
+  border-radius: var(--ds-crop-border-width);
+}
+.avatar-cropper cropper-handle[action="n-resize"],
+.avatar-cropper cropper-handle[action="s-resize"] { width: 100%; }
+.avatar-cropper cropper-handle[action="e-resize"],
+.avatar-cropper cropper-handle[action="w-resize"] { height: 100%; }
+.avatar-cropper cropper-handle[action="n-resize"],
+.avatar-cropper cropper-handle[action="ne-resize"],
+.avatar-cropper cropper-handle[action="nw-resize"] { top: calc(var(--ds-crop-handle-size) / -2); }
+.avatar-cropper cropper-handle[action="s-resize"],
+.avatar-cropper cropper-handle[action="se-resize"],
+.avatar-cropper cropper-handle[action="sw-resize"] { bottom: calc(var(--ds-crop-handle-size) / -2); }
+.avatar-cropper cropper-handle[action="e-resize"],
+.avatar-cropper cropper-handle[action="ne-resize"],
+.avatar-cropper cropper-handle[action="se-resize"] { right: calc(var(--ds-crop-handle-size) / -2); }
+.avatar-cropper cropper-handle[action="w-resize"],
+.avatar-cropper cropper-handle[action="nw-resize"] { left: calc(var(--ds-crop-handle-size) / -2); }
