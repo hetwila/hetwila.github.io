@@ -32,6 +32,7 @@ useSeoMeta({ title: '世界内论坛', description: '读一场世界内的讨论
         <li v-for="thread in forum.filter(item => item.community === board.community && item.board === board.title)" :key="thread.uid" class="forum-topic-row">
           <div class="min-w-0">
             <UBadge color="neutral" variant="subtle" size="sm" class="mb-3">{{ thread.category }}</UBadge>
+            <UBadge v-if="thread.fanfiction.length" variant="soft" size="sm" class="mb-3 ml-2">{{ thread.fanfiction.length }} 篇同人文</UBadge>
             <h3 class="text-lg font-semibold leading-heading text-highlighted"><NuxtLink :to="thread.path" class="hover:text-primary hover:underline">{{ thread.title }}</NuxtLink></h3>
             <p class="mt-3 text-caption text-muted">{{ thread.author }} 发起</p>
             <p class="mt-3 text-detail text-muted leading-copy">{{ thread.description }}</p>

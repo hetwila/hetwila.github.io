@@ -43,8 +43,20 @@ useHead({ link: [{ rel: 'canonical', href: `https://hetwila.github.io${currentPa
     <header class="forum-thread-heading rounded-card border border-default bg-raised p-panel">
       <div class="flex flex-wrap gap-inline items-center mb-4"><UBadge variant="soft">{{ thread.category }}</UBadge><span class="text-caption text-muted">世界内论坛 · 收录主题</span></div>
       <h1 class="font-semibold text-section leading-heading text-highlighted" data-pagefind-meta="title">{{ thread.title }}</h1>
+      <p v-if="thread.fanfiction.length" class="mt-4 text-detail leading-copy text-muted">{{ thread.description }}</p>
       <p class="mt-5 flex flex-wrap gap-inline text-caption text-muted"><span>{{ thread.author }} 发起</span><span>{{ thread.replyCount }} 条回复</span><span>{{ thread.participantCount }} 位参与者</span></p>
     </header>
+
+    <details v-if="thread.fanfiction.length" class="forum-fiction-directory mt-stack rounded-card border border-default bg-raised p-forum-post" open data-pagefind-ignore>
+      <summary class="cursor-pointer text-detail font-medium text-highlighted">同人文目录 <span class="ml-2 text-caption font-normal text-muted">{{ thread.fanfiction.length }} 篇 · 按楼层顺序</span></summary>
+      <nav aria-label="同人文目录" class="mt-4">
+        <ol class="grid gap-2 sm:grid-cols-2">
+          <li v-for="entry in thread.fanfiction" :key="entry.anchor">
+            <UButton :to="entry.path" variant="ghost" color="neutral" icon="i-lucide-book-open" class="min-h-control w-full justify-start" :ui="{ label: 'whitespace-normal text-left' }">{{ entry.title }}<span class="ml-2 text-caption text-muted">{{ entry.floor }}L</span></UButton>
+          </li>
+        </ol>
+      </nav>
+    </details>
 
     <div class="my-stack flex flex-wrap items-center justify-between gap-grid">
       <div class="flex flex-wrap gap-2" role="group" aria-label="阅读范围">

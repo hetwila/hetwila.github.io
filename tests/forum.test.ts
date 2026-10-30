@@ -19,7 +19,7 @@ async function fixture(action: (dir: string) => Promise<void>) {
 }
 
 test('forum import preserves every author and floor, with a separate discussion scope', async () => {
-  const [thread] = await readPublicForum(root)
+  const thread = (await readPublicForum(root)).find(thread => thread.metadata.routeKey === '皇族历史同人讨论')
   assert.ok(thread)
   assert.equal(thread.posts.length, 204)
   assert.equal(new Set(thread.posts.map(post => post.author)).size, 24)
@@ -60,7 +60,7 @@ test('unpublished forum material cannot enter the public collection and identiti
     const { data, content } = matter(await readFile(file, 'utf8'))
     for (const fields of [{ publicationStatus: 'draft' }, { publicationStatus: 'withdrawn' }, { visibility: 'private' }]) {
       await writeFile(file, matter.stringify(content, { ...data, ...fields }))
-      assert.deepEqual(await readPublicForum(dir), [])
+      assert.ok((await readPublicForum(dir)).every(thread => thread.metadata.routeKey !== '皇族历史同人讨论'))
     }
     await writeFile(join(dir, 'content/forum/重名测试.md'), matter.stringify(content, { ...data, routeKey: '重名测试' }))
     await assert.rejects(readPublicForum(dir), /Duplicate forum identity/)

@@ -7,7 +7,8 @@ import { markdownText } from '../../scripts/lib/markdown'
 import { forumPagePath } from '../../shared/forum'
 
 const key = '皇族历史同人讨论'
-const [source] = await readPublicForum(new URL('../..', import.meta.url).pathname)
+const sources = await readPublicForum(new URL('../..', import.meta.url).pathname)
+const source = sources.find(thread => thread.metadata.routeKey === key)
 
 test('all 204 floors and author-only reading are complete without JavaScript', async ({ browser }) => {
   test.setTimeout(60_000)
@@ -75,8 +76,9 @@ test('mobile forum navigation, floor mentions, keyboard pagination and search re
 
 test('forum HTTP exports remain independent, preserve the exact original and expose every floor to AI', async ({ request }) => {
   const manifest = await (await request.get('/data/v1/manifest.json')).json()
-  expect(manifest).toMatchObject({ forumThreadCount: 1, forumPostCount: 204, documentCount: 12 })
-  const [entry] = await (await request.get(manifest.forum)).json()
+  expect(manifest).toMatchObject({ forumThreadCount: sources.length, forumPostCount: sources.reduce((sum, thread) => sum + thread.posts.length, 0), documentCount: 12 })
+  const entries = await (await request.get(manifest.forum)).json()
+  const entry = entries.find((entry: { routeKey: string }) => entry.routeKey === key)
   const thread = await (await request.get(entry.jsonUrl)).json()
   expect(thread).toMatchObject({ narrativeLayer: 'in-world-discussion', scopeUid: entry.uid, postCount: 204, replyCount: 203, participantCount: 24 })
   expect(thread.posts).toHaveLength(204)

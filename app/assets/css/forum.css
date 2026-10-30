@@ -14,9 +14,34 @@
 .forum-prose p { @apply my-forum-paragraph; }
 .forum-prose > :first-child { margin-top: 0; }
 .forum-prose > :last-child { margin-bottom: 0; }
+
+/* Long-form fiction sits inside a floor, with its own reading rhythm. */
+.forum-fanfiction { margin-block: var(--ds-space-stack); border: var(--ds-border-width) solid var(--ui-border); border-top: var(--ds-quote-border-width) solid var(--ui-primary); border-radius: var(--ds-radius-card); background: var(--ui-bg); overflow-wrap: anywhere; }
+.forum-fanfiction, .forum-fanfiction [id] { scroll-margin-top: var(--ds-space-stack); }
+.forum-post-content:has(.forum-fanfiction) > .forum-prose { margin-inline: auto; }
+.forum-fanfiction:target { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: var(--ds-focus-offset); }
+.fanfiction-header, .fanfiction-footer { padding: var(--ds-fanfiction-padding); }
+.forum-fanfiction .fanfiction-header p { margin: 0; }
+.forum-fanfiction .fanfiction-title { @apply font-serif text-card text-highlighted font-semibold; margin: var(--ds-space-inline) 0 0; }
+.fanfiction-toc { margin-top: var(--ds-space-inline); border-top: var(--ds-border-width) solid var(--ui-border); padding-top: var(--ds-space-inline); }
+.fanfiction-prose { @apply font-serif text-fanfiction; padding: 0 var(--ds-fanfiction-padding) var(--ds-fanfiction-padding); max-width: var(--ds-reading-width); margin-inline: auto; color: var(--ui-text); }
+.forum-fanfiction .fanfiction-prose p { margin-block: var(--ds-fanfiction-paragraph-gap); line-height: inherit; }
+.forum-fanfiction .fanfiction-prose :is(h4, h5, h6) { @apply font-serif text-xl text-highlighted font-semibold; margin: var(--ds-space-layout) 0 var(--ds-space-stack); line-height: var(--ds-leading-heading); }
+.forum-fanfiction .fanfiction-prose :is(h4, h5, h6) a { color: inherit; text-decoration: none; }
+.forum-fanfiction .fanfiction-prose > :first-child { margin-top: 0; }
+.forum-fanfiction .fanfiction-prose > :last-child { margin-bottom: 0; }
+.fanfiction-footer { border-top: var(--ds-border-width) solid var(--ui-border); background: var(--ds-surface-tint); border-radius: 0 0 var(--ds-radius-card) var(--ds-radius-card); }
+.fanfiction-neighbors { display: grid; gap: var(--ds-space-inline); margin-block: var(--ds-space-inline); }
+/* Forum prose link styles must not override the UI controls in the reader. */
+.forum-fanfiction :is(.fanfiction-header, .fanfiction-footer) a { text-decoration: none; }
+@variant sm {
+  .fanfiction-neighbors { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @variant max-md {
   .forum-topic-row { grid-template-columns: 1fr; gap: var(--ds-space-inline); }
   .forum-post { grid-template-columns: 1fr; }
   .forum-post-author { flex-direction: row; align-items: center; border-right: 0; border-bottom: var(--ds-border-width) solid var(--ui-border); }
   .forum-floor-link { margin-left: auto; flex-shrink: 0; }
+  .forum-fanfiction { margin-inline: calc(var(--ds-forum-post-padding) * -1); border-inline: 0; border-radius: 0; }
+  .fanfiction-footer { border-radius: 0; }
 }

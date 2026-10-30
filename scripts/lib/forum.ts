@@ -7,7 +7,8 @@ import remarkParse from 'remark-parse'
 import remarkGfm from 'remark-gfm'
 import { visit, SKIP } from 'unist-util-visit'
 import { forumThreadSchema, forumPostSchema } from '../../shared/forum-schema.ts'
-import { forumPostPath, type ForumThreadMetadata, type ForumPost } from '../../shared/forum.ts'
+import { forumPostPath, forumFanfictionEntries, forumFanfictionAnchor, type ForumThreadMetadata, type ForumPost } from '../../shared/forum.ts'
+import { parseForumBody, renderFanfiction } from './forum-fanfiction.ts'
 
 const parser = unified().use(remarkParse).use(remarkGfm)
 
@@ -60,6 +61,15 @@ export interface ForumSource {
   posts: ForumPost[]
 }
 
+export function renderForumPost(post: ForumPost, routeKey: string, posts: ForumPost[]) {
+  const entries = forumFanfictionEntries(routeKey, posts)
+  return post.blocks.map(block => {
+    if (block.type === 'markdown') return linkForumFloors(block.bodyMarkdown, routeKey, posts.length)
+    const index = entries.findIndex(entry => entry.anchor === forumFanfictionAnchor(post.floor, block.key))
+    return renderFanfiction(block, entries[index]!, entries[index - 1], entries[index + 1])
+  }).join('\n\n')
+}
+
 export async function readPublicForum(root: string): Promise<ForumSource[]> {
   const directory = join(root, 'content/forum')
   const originals = join(root, 'sources/forum')
@@ -91,13 +101,14 @@ export async function readPublicForum(root: string): Promise<ForumSource[]> {
     }
     const parsed = parseForumPosts(content)
     const originalPosts = parseForumPosts(original.slice(firstPost.position!.start.offset!))
-    if (JSON.stringify(parsed) !== JSON.stringify(originalPosts)) throw new Error(`Forum text differs from original: ${filename}`)
+    const withoutLayout = (posts: typeof parsed) => posts.map(post => ({ ...post, bodyMarkdown: parseForumBody(post.bodyMarkdown).bodyMarkdown }))
+    if (JSON.stringify(withoutLayout(parsed)) !== JSON.stringify(withoutLayout(originalPosts))) throw new Error(`Forum text differs from original: ${filename}`)
     const posts: ForumPost[] = parsed.map(post => ({
       ...forumPostSchema.parse({
         ...post, uid: `post:${metadata.uid.slice('thread:'.length)}:${post.floor}`,
         threadUid: metadata.uid, scopeUid: metadata.uid, narrativeLayer: metadata.narrativeLayer,
       }),
-      path: forumPostPath(metadata.routeKey, post.floor), bodyMarkdown: post.bodyMarkdown,
+      path: forumPostPath(metadata.routeKey, post.floor), ...parseForumBody(post.bodyMarkdown),
     }))
     result.push({ metadata, raw, markdown: content.trim(), original, originalSha256, posts })
   }

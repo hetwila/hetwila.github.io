@@ -137,3 +137,19 @@ Tailwind 生成 CSS 和 Nuxt UI 合并类名是两件事。自定义 `text-card`
 | `--ds-forum-paragraph-gap` | `my-forum-paragraph` | 发言内部段距 |
 
 这些名称均经 Tailwind 4 `@theme inline` 和 Nuxt UI `ui.tv` 登记；自定义布局直接消费同一变量。楼层定位的高亮用全站 focus 角色，页面不添加独立深色覆盖。`tests/browser/forum.spec.ts` 覆盖两种主题、桌面／手机 axe 检查、无 JS 完整原文、键盘分页、楼层定位及独立导出；视觉验收还需检查截图。
+
+### 楼内同人文
+
+`app/components/content/ForumFanfiction.vue` 是 Nuxt Content 的楼内文章组件。构建将经过校验的边界标记转换成该组件，作者不直接填写 MDC props。组件接收标题、稳定锚点、完整讨论中的路径、字数、章节列表及可选前后篇，默认 slot 是文章正文；外层 `article` 与所在楼层各有可访问名称。标题为三级，章节为四级及以下，ID 含楼号和篇目标识，不与其他篇目冲突。
+
+文章纸面使用 `--ui-bg`，外框及页脚使用全站边框、primary 和 tint 角色。正文使用系统衬线字体、阅读宽度和宽松行距；聊天继续使用紧凑的 forum 排版。手机将文章横向伸展到楼层边缘，避免多层内边距挤窄长文。无独立主题状态或硬编码明暗配色。
+
+| 变量 | Tailwind 接口 | 用途 |
+| --- | --- | --- |
+| `--ds-fanfiction-font-size` / `--ds-fanfiction-leading` | `text-fanfiction` | 使用 lg 字号与 prose 行距，手机保留相同阅读字号 |
+| `--ds-fanfiction-padding` | `p-fanfiction` | 文章内边距，手机继承楼层留白 |
+| `--ds-fanfiction-paragraph-gap` | `my-fanfiction-paragraph` | 长文段距，与聊天分开 |
+
+导航复用 `UButton` 的真实链接。主题目录和篇内目录使用原生 `details`，以确保无 JavaScript 仍能展开；正文始终输出在静态 HTML 中。顶部“跳过正文”直达文末讨论边界，文末提供前后篇、回到篇首及永久链接。章节标题和正文进入论坛搜索；目录、字数和操作文案不重复索引。
+
+`tests/browser/forum-fanfiction.spec.ts` 覆盖附件全文、聊天混排、无 JS 目录／导航、键盘及深链接、搜索、独立导出、无后端请求、桌面／手机与明暗主题可访问性；内容测试另核对原附件哈希、边界错误、跨页导航与未发表内容排除。

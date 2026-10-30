@@ -65,6 +65,10 @@
   --ds-forum-font-size: var(--ds-text-copy);
   --ds-forum-leading: var(--ds-leading-copy);
   --ds-forum-paragraph-gap: var(--ds-space-inline);
+  --ds-fanfiction-font-size: var(--text-lg);
+  --ds-fanfiction-leading: var(--ds-leading-prose);
+  --ds-fanfiction-padding: var(--ds-space-panel);
+  --ds-fanfiction-paragraph-gap: calc(var(--spacing) * 5);
   --ds-crop-border-width: var(--ds-focus-width);
   --ds-crop-handle-size: calc(var(--spacing) * 7);
   --ds-crop-grip-size: calc(var(--spacing) * 3);
@@ -84,6 +88,7 @@
     --ds-nav-width: calc(var(--spacing) * 40);
   }
   @variant max-md {
+    --ds-fanfiction-padding: var(--ds-forum-post-padding);
     --ds-forum-post-padding: calc(var(--spacing) * 4);
     --ui-header-height: calc(var(--spacing) * 17);
     --ds-logo-size: calc(var(--spacing) * 8);
