@@ -15,7 +15,12 @@ export async function accountFixture(page:Page,group?:'guest'|'admin') {
     const body=(await original.text()).replace(/(window\.__NUXT__\.config=.*?)(<\/script>)/s, '$1;Object.assign(window.__NUXT__.config.public,{supabaseUrl:"https://account.example.test",supabaseKey:"sb_publishable_test_only",turnstile:{siteKey:"test-site-key"}});$2')
     await route.fulfill({response:original,body})
   })
-  await page.addInitScript(({session,loggedIn})=>{if(loggedIn)localStorage.setItem('sb-account-auth-token',JSON.stringify(session))},{session,loggedIn:Boolean(group)})
+  await page.addInitScript(({session,loggedIn})=>{
+    if(!sessionStorage.getItem('account-fixture-initialized')) {
+      if(loggedIn)localStorage.setItem('sb-account-auth-token',JSON.stringify(session))
+      sessionStorage.setItem('account-fixture-initialized','true')
+    }
+  },{session,loggedIn:Boolean(group)})
   await page.route('https://challenges.cloudflare.com/turnstile/**',route=>route.fulfill({contentType:'text/javascript',body:`window.turnstile={render(el,options){window.solveAccountCaptcha=()=>options.callback('test-proof');window.expireAccountCaptcha=()=>options['expired-callback']();return 'test-widget'},reset(){},remove(){}};`}))
   await page.route('https://account.example.test/**',async route=>{
     const request=route.request(),url=new URL(request.url()),path=url.pathname
@@ -27,6 +32,7 @@ export async function accountFixture(page:Page,group?:'guest'|'admin') {
     if(path==='/auth/v1/token') return body.password==='incorrect' ? send({msg:'Invalid login credentials',error_code:'invalid_credentials'},400) : send(session)
     if(path==='/auth/v1/user') return send({user,...user})
     if(path==='/auth/v1/logout') return route.fulfill({status:204,headers})
+    if(path==='/rest/v1/rpc/content_can_submit') return send(profile.user_group === 'admin')
     if(path==='/functions/v1/account-register') return send({userId})
     if(path==='/functions/v1/account-avatar') {avatarBytes=request.postDataBuffer()||undefined;profile.avatar_path=`${userId}/test.png`;return send({avatarPath:profile.avatar_path})}
     if(path.startsWith('/storage/')) return route.fulfill({status:404,headers})

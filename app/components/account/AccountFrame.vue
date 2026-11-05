@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{ title: string, description?: string }>()
 const account = useAccount()
+const { canSubmit } = usePrivateContent()
 onMounted(account.initialize)
 useSeoMeta({ title: () => props.title, robots: 'noindex, nofollow' })
 </script>
@@ -13,6 +14,8 @@ useSeoMeta({ title: () => props.title, robots: 'noindex, nofollow' })
       <nav aria-label="用户中心导航" class="flex flex-wrap gap-inline my-stack">
         <UButton to="/account" color="neutral" variant="outline">个人中心</UButton>
         <UButton v-if="account.isAdmin.value" to="/account/admin" color="neutral" variant="outline">管理中心</UButton>
+        <UButton to="/private" color="neutral" variant="outline">可阅读内容</UButton>
+        <UButton v-if="canSubmit || account.isAdmin.value" to="/account/submissions" color="neutral" variant="outline">{{ account.isAdmin.value ? '内容与投稿' : '我的投稿' }}</UButton>
         <UButton to="/" color="neutral" variant="link">返回网站</UButton>
       </nav>
       <noscript><p class="my-stack">账号功能需要启用 JavaScript；百科、故事和论坛仍可直接阅读。</p></noscript>

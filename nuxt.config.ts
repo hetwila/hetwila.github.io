@@ -28,7 +28,7 @@ export default defineNuxtConfig({
     prerender: {
       crawlLinks: true,
       failOnError: true,
-      routes: [...routes, '/account', '/account/login', '/account/register', '/account/admin', '/comments'],
+      routes: [...routes, '/account', '/account/login', '/account/register', '/account/admin', '/account/submissions', '/account/submissions/edit', '/private', '/private/read', '/comments'],
     },
   },
   typescript: { strict: true },

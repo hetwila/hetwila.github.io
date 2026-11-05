@@ -8,6 +8,8 @@ Nuxt 4 + Nuxt UI 4 + Nuxt Content 3 的静态档案网站，使用 Tailwind CSS 
 
 故事读者评论已于 2026-10-29 上线，使用可按 UUID 独立嵌入的组件，也可通过 `/comments?id=<UUID>` 访问；数据库以文章 UID 关联故事。guest 与 admin 可投稿，作者可编辑删除自己的评论，admin 可删除任意评论及控制评论区／文章的投稿开关。支持受限 Markdown 预览、头像昵称、投稿与更新时间、分页；百科及世界内论坛不接入。真实云端及线上浏览器验收通过，部署和验收记录见 [评论系统](docs/评论系统.md)。
 
+私有百科、故事与论坛投稿已实现：正文保存在 Supabase，沿用普通文章、楼层与同人文排版；管理员可查看全部内容，并逐篇按用户或用户组授予阅读权限。投稿能力按用户组控制，初始仅管理员可用。主分支 Pages 构建动态读取仅含 UUID 路径的清单并生成空壳，正文在访问时经 RLS 加载；新稿在部署前使用通用阅读地址。入口、权限、API 和部署步骤见 [私有内容与投稿](docs/私有内容与投稿.md)。
+
 已支持系统／浅色／深色主题、手机导航、页面目录与键盘搜索。开发约定见 [AGENTS.md](AGENTS.md)，主题与组件契约见 [设计系统](docs/design-system.md)，完整产品规划见 [网站设计书](docs/网站设计书.md)。百科作者和 AI 可直接阅读[百科条目编写规范](docs/百科条目编写规范.md)，获取当前文件格式、完整示例、来源和互链规则，以及[三种模板](docs/模板/)。无需先了解网站代码。
 
 ## 设计系统与官方技能
@@ -55,7 +57,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-开发进程默认端口3000，同时监听原始内容目录并重新生成可公开内容。修改 `content/wiki/*.md`、`content/stories/*.md` 或 `content/forum/*.md` 后，等待内容转换完成，刷新页面即可看到更新；页面／样式由Nuxt热更新。开发进程与静态构建都不需要 Supabase 密钥。
+开发进程默认端口3000，同时监听原始内容目录并重新生成可公开内容。修改 `content/wiki/*.md`、`content/stories/*.md` 或 `content/forum/*.md` 后，等待内容转换完成，刷新页面即可看到更新；页面／样式由Nuxt热更新。离线开发与公开内容构建不需要 Supabase 配置；正式 Pages 构建使用公开 URL／key 获取私有 URL 清单，不使用服务 secret。
 
 ## 检查与构建
 
@@ -68,11 +70,14 @@ pnpm dev
 | `pnpm generate` | 预渲染HTML、输出机器数据、构建Pagefind索引 |
 | `pnpm preview` | 在4173端口运行静态产物验证服务 |
 | `pnpm test:e2e` | 对生成产物运行阅读、搜索、主题、可访问性与HTTP测试，自动启停验证服务 |
-| `pnpm test` | 内容测试 → 生成 → 浏览器测试 |
+| `pnpm test:private-build` | 以本地路由 API 执行真实生成，验证私有空壳与静态产物隔离 |
+| `pnpm test` | 内容测试 → 私有空壳构建测试 → 浏览器测试 |
 | `pnpm test:accounts` | Edge Function 测试 → 真实 PostgreSQL／Auth／PostgREST 权限集成测试（需要 Docker） |
 | `pnpm accounts:check` | 仅检查所需变量是否已加载，不输出值 |
 | `pnpm accounts:deploy` | 使用项目管理令牌部署数据库、Auth 设置与 Edge Functions |
 | `pnpm comments:deploy` | 沿用 Management API 历史部署迁移并同步公开故事评论区关联，不修改 Auth 或函数 |
+| `pnpm content:deploy` | 沿用迁移历史部署私有内容数据库并复核 RLS，不修改 Auth、函数或评论关联 |
+| `pnpm content:verify` | 云端事务验证并回滚全部测试资料，再检查匿名 HTTP 权限与路由清单 |
 | `pnpm accounts:bootstrap <邮箱>` | 安全初始化首位管理员；凭据只写入被 Git 忽略的本地文件 |
 
 Playwright优先使用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`，或云环境已有的 `/usr/bin/chromium`。其他环境可运行 `pnpm exec playwright install chromium`。测试需要4173端口可用，不复用不明的现有服务。

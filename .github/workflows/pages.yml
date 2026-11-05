@@ -54,6 +54,9 @@ jobs:
       - name: Test account authorization and functions
         run: pnpm test:accounts
 
+      - name: Verify private route shells and static content isolation
+        run: pnpm test:private-build
+
       - name: Generate static site and search index
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL || secrets.SUPABASE_URL }}
@@ -70,6 +73,9 @@ jobs:
           publicAccountConfig(process.env)
           console.log('All three public account build variables are present and validated.')
           JS
+          fi
+          if [[ "$GITHUB_REF" == 'refs/heads/main' ]]; then
+            export PRIVATE_CONTENT_ROUTES=required
           fi
           pnpm generate
 
@@ -164,6 +170,12 @@ jobs:
                       if anchor:
                           assert f'id="{anchor}"' in read(path).decode(), f'Missing event paragraph: {event["path"]}'
                   assert '世界内论坛' in read('/forum').decode()
+                  for path in json.loads(read('/private-routes.json')):
+                      assert path.startswith('/private/'), 'Invalid private route'
+                      shell = read(path).decode()
+                      assert 'data-private-shell' in shell and 'noindex, nofollow, noarchive' in shell, f'Missing private shell: {path}'
+                      assert all(field not in shell for field in ['body_markdown', 'forum_posts', 'content_user_grants', 'private_documents']), 'Private data in static shell'
+                  assert 'data-private-shell' in read('/private/read').decode()
                   for entry in json.loads(read(manifest['forum'])):
                       thread = json.loads(read(entry['jsonUrl']))
                       pages = {path: read(path).decode() for path in thread['pages']}

@@ -19,6 +19,7 @@ const entries = computed(() => catalog.filter(entry => (!props.category || entry
       <UButton to="/wiki" :variant="!category ? 'solid' : 'outline'" :aria-current="!category ? 'page' : undefined">全部条目</UButton>
       <UButton v-for="item in categories" :key="item" :to="`/wiki/category/${item}`" :variant="category === item ? 'solid' : 'outline'" :aria-current="category === item ? 'page' : undefined">{{ item }}</UButton>
     </nav>
+    <UButton to="/private?kind=wiki" color="neutral" variant="outline" icon="i-lucide-lock-keyhole" class="mb-stack" data-pagefind-ignore>查看获授权的百科</UButton>
     <UInput v-model="query" icon="i-lucide-search" aria-label="筛选百科条目" placeholder="标题、别名或编号" class="w-full max-w-reading" />
     <p class="my-stack text-caption text-muted" aria-live="polite">{{ entries.length }} 个条目 · 设定 3.0.3</p>
     <ul class="grid gap-grid md:grid-cols-2">

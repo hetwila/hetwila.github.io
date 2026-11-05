@@ -6,6 +6,7 @@ import { createHmac } from 'node:crypto'
 import { commentRegistrySQL } from '../../scripts/lib/comment-registry.ts'
 import { readPublicContent } from '../../scripts/lib/content.ts'
 import { readFileSync, readdirSync } from 'node:fs'
+import { fetchPrivateRoutes } from '../../scripts/lib/private-routes.ts'
 
 const prefix = `hetwila-accounts-test-${process.pid}`
 const jwtSecret = 'local-account-integration-test-only-secret-000000000'
@@ -242,4 +243,131 @@ test('story registry sync is idempotent, keeps IDs and switches, and registers n
   assert.equal(after.section_id,before.section_id);assert.equal(after.comments_enabled,false)
   assert.equal((await rest(`/comment_sections?id=eq.${before.section_id}`)).body[0].posting_enabled,false)
   assert.equal(sql("select count(*) from public.comment_articles where article_uid not like 'story:%'"),'0')
+})
+
+let privateId = ''
+const manuscript = { kind: 'story', title: 'Private title sentinel', description: 'Private description sentinel', body_markdown: 'Private body sentinel', status: 'published' }
+async function access(users: string[], groups: string[], expected?: number, bearer = adminToken) {
+  const version = expected ?? (await rest(`/private_documents?id=eq.${privateId}`, 'GET', undefined, adminToken)).body[0].access_version
+  return rest('/rpc/content_set_access', 'POST', { p_document_id: privateId, p_users: users, p_groups: groups, p_expected_version: version }, bearer)
+}
+test('private manuscripts default to admin-only, and guests cannot submit or forge protected columns', async () => {
+  assert.equal((await rest('/rpc/content_can_submit', 'POST', {}, guestToken)).body, false)
+  assert.equal((await rest('/rpc/content_can_submit', 'POST', {}, adminToken)).body, true)
+  assert.equal((await rest('/private_documents', 'POST', manuscript, guestToken)).status, 403)
+  assert.equal((await rest('/private_documents', 'POST', manuscript, anonToken)).status, 401)
+  const result = await rest('/private_documents', 'POST', manuscript, adminToken)
+  assert.equal(result.status, 201, JSON.stringify(result.body)); privateId = result.body[0].id
+  assert.equal(result.body[0].created_by, adminId)
+  assert.equal((await rest(`/private_documents?id=eq.${privateId}`, 'GET', undefined, adminToken)).body.length, 1)
+  assert.deepEqual((await rest('/private_documents?select=id,title,description,body_markdown', 'GET', undefined, guestToken)).body, [])
+  assert.equal((await rest('/private_documents', 'GET', undefined, anonToken)).status, 401)
+  for (const fields of [{ id: crypto.randomUUID() }, { created_by: guestId }, { created_at: '2020-01-01' }, { access_version: 999 }, { kind: 'wiki' }]) {
+    assert.equal((await rest(`/private_documents?id=eq.${privateId}`, 'PATCH', fields, adminToken)).status, 403)
+  }
+  assert.equal((await rest('/content_submission_permissions?user_group=eq.guest', 'PATCH', { can_submit: true }, guestToken)).status, 403)
+  assert.deepEqual((await rest(`/private_documents?id=eq.${privateId}`, 'PATCH', { body_markdown: 'overwrite' }, guestToken)).body, [])
+  assert.deepEqual((await rest(`/private_documents?id=eq.${privateId}`, 'DELETE', undefined, guestToken)).body, [])
+})
+test('per-user and per-group reading grants combine with OR and revocation uses current database membership', async () => {
+  const initial = (await rest(`/private_documents?id=eq.${privateId}`)).body[0]
+  assert.equal((await access([guestId], [])).status, 200)
+  assert.equal((await rest(`/private_documents?id=eq.${privateId}`, 'GET', undefined, guestToken)).body[0].body_markdown, manuscript.body_markdown)
+  assert.equal((await rest(`/private_documents?id=eq.${privateId}`)).body[0].updated_at, initial.updated_at, 'ACL changes must not mask manuscript conflicts')
+  assert.deepEqual((await rest('/content_user_grants', 'GET', undefined, guestToken)).body, [])
+  assert.deepEqual((await rest('/content_group_grants', 'GET', undefined, guestToken)).body, [])
+  assert.equal((await access([], [], undefined, guestToken)).status, 403)
+  assert.equal((await rest('/content_user_grants', 'POST', { document_id: privateId, user_id: guestId }, guestToken)).status, 403)
+  assert.equal((await access([], ['guest'])).status, 200)
+  assert.equal((await rest(`/private_documents?id=eq.${privateId}`, 'GET', undefined, guestToken)).body.length, 1)
+  assert.equal((await access([guestId], ['guest'])).status, 200)
+  assert.equal((await access([guestId], [])).status, 200)
+  assert.equal((await rest(`/private_documents?id=eq.${privateId}`, 'GET', undefined, guestToken)).body.length, 1)
+  assert.equal((await access([], [])).status, 200)
+  assert.deepEqual((await rest(`/private_documents?id=eq.${privateId}`, 'GET', undefined, guestToken)).body, [])
+  // Mutating writable metadata was already used at registration; it never grants admin.
+  assert.equal((await rest('/rpc/content_can_submit', 'POST', {}, guestToken)).body, false)
+})
+test('access replacement is atomic, rejects stale administrators and rolls back invalid recipients', async () => {
+  await access([guestId], [])
+  const version = (await rest(`/private_documents?id=eq.${privateId}`)).body[0].access_version
+  const results = await Promise.all([access([], ['guest'], version), access([guestId], [], version)])
+  assert.equal(results.filter(r => r.status === 200).length, 1)
+  assert.equal(results.filter(r => r.body?.code === '40001').length, 1)
+  const before = (await rest(`/content_user_grants?document_id=eq.${privateId}`)).body
+  const previous = (await rest(`/content_group_grants?document_id=eq.${privateId}`)).body
+  assert.equal((await access([crypto.randomUUID()], [])).status, 409)
+  assert.deepEqual((await rest(`/content_user_grants?document_id=eq.${privateId}`)).body, before)
+  assert.deepEqual((await rest(`/content_group_grants?document_id=eq.${privateId}`)).body, previous)
+  assert.notEqual((await access([], ['nonexistent-group'])).status, 200)
+})
+test('group changes and deleted accounts revoke reading even when the old access token is retained', async () => {
+  await access([], ['guest'])
+  sql("alter type public.account_group add value 'collaborator'")
+  sql(`update public.account_profiles set user_group='collaborator' where id='${guestId}'`)
+  assert.deepEqual((await rest(`/private_documents?id=eq.${privateId}`, 'GET', undefined, guestToken)).body, [])
+  assert.equal((await rest('/rpc/content_can_submit', 'POST', {}, guestToken)).body, false)
+  assert.equal((await access([], ['collaborator'])).status, 200)
+  assert.equal((await rest(`/private_documents?id=eq.${privateId}`, 'GET', undefined, guestToken)).body.length, 1)
+  sql(`update public.account_profiles set user_group='guest' where id='${guestId}'`)
+  await invite('PRIV01')
+  const created = await register('private-gone@example.test', 'PRIV01')
+  const bearer = (await login('private-gone@example.test')).body.access_token
+  await access([created.body.id], [])
+  assert.equal((await rest(`/private_documents?id=eq.${privateId}`, 'GET', undefined, bearer)).body.length, 1)
+  await auth(`/admin/users/${created.body.id}`, 'DELETE')
+  assert.deepEqual((await rest(`/private_documents?id=eq.${privateId}`, 'GET', undefined, bearer)).body, [])
+  assert.equal((await rest('/rpc/content_can_submit', 'POST', {}, bearer)).body, false)
+})
+test('drafts stay hidden from granted readers and submission can later be enabled for another group without granting publication', async () => {
+  await access([guestId], ['guest'])
+  await rest(`/private_documents?id=eq.${privateId}`, 'PATCH', { status: 'draft' }, adminToken)
+  assert.deepEqual((await rest(`/private_documents?id=eq.${privateId}`, 'GET', undefined, guestToken)).body, [])
+  sql("update public.content_submission_permissions set can_submit=true where user_group='guest'")
+  assert.equal((await rest('/rpc/content_can_submit', 'POST', {}, guestToken)).body, true)
+  assert.equal((await rest('/private_documents', 'POST', manuscript, guestToken)).status, 403)
+  const draft = await rest('/private_documents', 'POST', { ...manuscript, status: 'draft' }, guestToken)
+  assert.equal(draft.status, 201, JSON.stringify(draft.body))
+  const target = `/private_documents?id=eq.${draft.body[0].id}`
+  assert.equal((await rest(target, 'GET', undefined, guestToken)).body.length, 1)
+  assert.equal((await rest(target, 'GET', undefined, adminToken)).body.length, 1)
+  assert.equal((await rest(target, 'PATCH', { body_markdown: 'own draft' }, guestToken)).body.length, 1)
+  assert.equal((await rest(target, 'PATCH', { status: 'published' }, guestToken)).status, 403)
+  sql("update public.content_submission_permissions set can_submit=false where user_group='guest'")
+  assert.deepEqual((await rest(target, 'PATCH', { body_markdown: 'revoked author' }, guestToken)).body, [])
+  assert.deepEqual((await rest(target, 'GET', undefined, guestToken)).body, [])
+  assert.equal((await rest(target, 'DELETE', undefined, adminToken)).body.length, 1)
+  await rest(`/private_documents?id=eq.${privateId}`, 'PATCH', { status: 'published' }, adminToken)
+})
+test('forum submissions enforce bounded floors, preserve mixed fiction and detect stale manuscript edits', async () => {
+  const posts = [{ floor: 1, author: '作品楼主', body: '聊天。\n\n<!-- fanfiction: 一 -->\n\n## 篇名\n\n### 章节\n\n私有正文。\n\n<!-- /fanfiction -->\n\n继续聊天。', isOriginalPoster: true }, { floor: 2, author: '作品读者', body: '第二层。', isOriginalPoster: false }]
+  for (const invalid of [[], [{ ...posts[0], floor: 2 }], [{ ...posts[0], author: '' }], [{ ...posts[0], isOriginalPoster: false }], [{ ...posts[0], body: '' }], [{ ...posts[0], unexpected: true }]]) {
+    const result = await rest('/private_documents', 'POST', { kind: 'forum', title: 'Forum', forum_posts: invalid }, adminToken)
+    assert.equal(result.status, 400, JSON.stringify(result.body))
+  }
+  const created = await rest('/private_documents', 'POST', { kind: 'forum', title: 'Forum', forum_posts: posts }, adminToken)
+  assert.equal(created.status, 201, JSON.stringify(created.body))
+  assert.deepEqual(created.body[0].forum_posts, posts)
+  const row = created.body[0], path = `/private_documents?id=eq.${row.id}&updated_at=eq.${encodeURIComponent(row.updated_at)}`
+  assert.equal((await rest(path, 'PATCH', { title: 'First edit' }, adminToken)).body.length, 1)
+  assert.deepEqual((await rest(path, 'PATCH', { title: 'Stale edit' }, adminToken)).body, [])
+  assert.equal((await rest(`/private_documents?id=eq.${row.id}`, 'DELETE', undefined, adminToken)).body.length, 1)
+})
+test('the anonymous build projection returns only opaque routes, including tombstones, and never manuscript data', async () => {
+  const requested: string[] = []
+  const paths = await fetchPrivateRoutes({ PRIVATE_CONTENT_ROUTES: 'required', SUPABASE_URL: 'https://fixture.supabase.co', SUPABASE_KEY: 'sb_publishable_fixture' }, async (input, init) => {
+    const url = new URL(String(input)); requested.push(url.pathname)
+    return fetch(restUrl + url.pathname.replace('/rest/v1', '') + url.search, { ...init, headers: { Authorization: `Bearer ${anonToken}` } })
+  })
+  assert.ok(paths.includes(`/private/${privateId}`)); assert.ok(paths.length >= 3)
+  assert.ok(requested.every(p => p === '/rest/v1/private_content_routes'))
+  const publicRows = await rest('/private_content_routes?select=*', 'GET', undefined, anonToken)
+  assert.ok(publicRows.body.every((r: object) => Object.keys(r).join() === 'path'))
+  assert.ok(!JSON.stringify(publicRows.body).includes('sentinel'))
+  assert.equal((await rest('/private_content_routes', 'POST', { path: `/private/${crypto.randomUUID()}` }, adminToken)).status, 403)
+  assert.equal((await rest('/private_content_routes', 'DELETE', undefined, guestToken)).status, 403)
+  await rest(`/private_documents?id=eq.${privateId}`, 'DELETE', undefined, adminToken)
+  assert.deepEqual((await rest(`/content_user_grants?document_id=eq.${privateId}`)).body, [])
+  assert.deepEqual((await rest(`/content_group_grants?document_id=eq.${privateId}`)).body, [])
+  assert.ok((await rest('/private_content_routes', 'GET', undefined, anonToken)).body.some((r: { path: string }) => r.path === `/private/${privateId}`))
 })

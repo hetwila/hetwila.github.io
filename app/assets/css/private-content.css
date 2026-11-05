@@ -1,0 +1,12 @@
+/* Use the public article and forum typography, without executing author HTML. */
+.reading-markdown { min-width: 0; overflow-wrap: anywhere; }
+.reading-markdown :is(h3, h4, h5, h6) { @apply font-serif text-xl font-semibold text-highlighted; margin-block: var(--ds-space-stack) var(--ds-space-inline); }
+.reading-markdown :is(ul, ol) { padding-left: var(--ds-space-stack); margin-block: var(--ds-space-inline); }
+.reading-markdown ul { list-style: disc; }
+.reading-markdown ol { list-style: decimal; }
+.reading-markdown :is(pre, .reading-table-scroll) { max-width: 100%; overflow-x: auto; }
+.reading-markdown pre { padding: var(--ds-space-inline); background: var(--ui-bg-muted); border-radius: var(--ds-radius-card); }
+.reading-markdown code { font-family: var(--font-mono); font-size: var(--ds-text-detail); }
+.reading-markdown img { max-width: 100%; height: auto; margin-block: var(--ds-space-inline); }
+.reading-markdown > :first-child { margin-top: 0; }
+.reading-markdown > :last-child { margin-bottom: 0; }

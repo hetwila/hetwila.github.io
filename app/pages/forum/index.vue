@@ -19,6 +19,7 @@ useSeoMeta({ title: '世界内论坛', description: '读一场世界内的讨论
         <p><strong class="block text-card text-highlighted tabular-nums">{{ posts }}</strong>楼层发言</p>
       </div>
     </header>
+    <UButton to="/private?kind=forum" color="neutral" variant="outline" icon="i-lucide-lock-keyhole" class="mb-stack" data-pagefind-ignore>查看获授权的帖子</UButton>
 
     <section v-for="(board, index) in boards" :key="`${board.community}/${board.title}`" class="forum-board mb-stack" :aria-labelledby="`board-${index}`">
       <header class="flex items-center gap-inline border-b border-default bg-tint p-panel">

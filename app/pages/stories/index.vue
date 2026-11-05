@@ -10,6 +10,7 @@ useSeoMeta({ title: '故事书架', description: '从具体的人与经历走进
     <h1 class="section-title">故事书架</h1>
     <p class="mt-4 max-w-reading text-muted leading-copy">历史记录了结果，故事走进其中的人与生活。阅读时，可以沿着关键词查阅相关设定。</p>
     <p class="my-stack text-caption text-muted">{{ stories.length }} 篇故事 · 作者提供</p>
+    <UButton to="/private?kind=story" color="neutral" variant="outline" icon="i-lucide-lock-keyhole" class="mb-stack" data-pagefind-ignore>查看获授权的故事</UButton>
     <ul class="grid gap-grid md:grid-cols-2">
       <li v-for="entry in stories" :key="entry.uid">
         <UPageCard :title="entry.title" :description="entry.description" :to="entry.path" :aria-label="entry.title" class="h-full">

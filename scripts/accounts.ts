@@ -22,7 +22,7 @@ async function main() {
     for(const name of required) console.log(`${name}: ${process.env[name]?'已加载':'未加载'}`)
     configuration(); return
   }
-  if(!['deploy','comments','bootstrap'].includes(command)) throw new Error('用法：pnpm accounts:check / accounts:deploy / comments:deploy / accounts:bootstrap <管理员邮箱>')
+  if(!['deploy','comments','content','bootstrap'].includes(command)) throw new Error('用法：pnpm accounts:check / accounts:deploy / comments:deploy / content:deploy / accounts:bootstrap <管理员邮箱>')
   const config=configuration()
   const origins=(process.env.ACCOUNT_ALLOWED_ORIGINS || 'https://hetwila.github.io').split(',').map(o=>o.trim())
   for(const origin of origins) { const url=new URL(origin); if(url.origin!==origin || (url.protocol!=='https:' && !['localhost','127.0.0.1'].includes(url.hostname))) throw new Error('ACCOUNT_ALLOWED_ORIGINS 必须是以逗号分隔的网站 Origin。') }
@@ -39,7 +39,7 @@ async function main() {
       child.on('exit',code=>code===0?ok():fail(new Error(`Supabase CLI 未完成，退出码 ${code}。`)))
     })
   }
-  if(command==='deploy' || command==='comments') {
+  if(command==='deploy' || command==='comments' || command==='content') {
     if(command==='deploy') {
     // Read first, then change only this feature's Auth settings and migrations.
     const existing=await management('/config/auth')
@@ -63,9 +63,11 @@ async function main() {
       await management('/database/migrations','POST',{name,query:`-- ${marker}\n${query}`})
       console.log(`已应用 ${file}`)
     }
-    const documents=await readPublicContent({wiki:resolve('content/wiki'),stories:resolve('content/stories')})
-    await sql(commentRegistrySQL(documents))
-    console.log('公开故事与评论区的 UID 关联已同步，现有开关和评论保持不变。')
+    if(command !== 'content') {
+      const documents=await readPublicContent({wiki:resolve('content/wiki'),stories:resolve('content/stories')})
+      await sql(commentRegistrySQL(documents))
+      console.log('公开故事与评论区的 UID 关联已同步，现有开关和评论保持不变。')
+    }
     if(command==='deploy') {
     await management('/secrets','POST',[
       {name:'TURNSTILE_SECRET_KEY',value:process.env.NUXT_TURNSTILE_SECRET_KEY},
@@ -80,6 +82,11 @@ async function main() {
     for(const lint of advisors.lints) console.log(`安全 advisor：${lint.level} ${lint.name}`)
     if(advisors.lints.some((lint:{level:string})=>lint.level==='ERROR')) throw new Error('安全 advisors 检测到错误，请修复后重新部署。')
     if(command==='comments') { console.log('评论数据库部署与关联同步完成。'); return }
+    if(command==='content') {
+      const check = await sql("select relrowsecurity from pg_class where oid='public.private_documents'::regclass", true)
+      if(check[0]?.relrowsecurity !== true) throw new Error('私有内容 RLS 未启用。')
+      console.log('私有内容数据库部署完成，RLS 已复核。'); return
+    }
     const probe=await fetch(`${config.url}/functions/v1/account-avatar`,{method:'POST',headers:{apikey:process.env.SUPABASE_KEY!,Origin:origins[0]!}})
     if(probe.status!==401) throw new Error('头像接口的未登录访问验证未通过，请检查函数部署日志。')
     console.log('后端部署完成。Pages 构建仍需配置三个公开变量，详见 docs/用户系统.md。')

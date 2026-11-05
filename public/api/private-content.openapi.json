@@ -1,0 +1,747 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "赫特维拉私有内容与投稿 API",
+    "version": "1.0.0",
+    "description": "Private manuscripts live only in Supabase. Authorization is enforced by grants and RLS on every request. Admins read/manage all content; ordinary readers require a published document and a per-user OR current account-group grant. Submission is separately controlled by content_submission_permissions (initially admin only). Forum nicknames are fictional text, not account identities."
+  },
+  "servers": [
+    {
+      "url": "https://{projectRef}.supabase.co",
+      "variables": {
+        "projectRef": {
+          "default": "your-project-ref"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "apikey": [],
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/rest/v1/private_documents": {
+      "get": {
+        "summary": "Read permitted manuscripts or summaries",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<UUID> for one manuscript"
+          },
+          {
+            "name": "select",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "List projection should omit body_markdown and forum_posts"
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.wiki / eq.story / eq.forum"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "created_at.desc,id.asc"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size, normally 20"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Pagination offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rows visible under RLS. Unavailable IDs return no rows; titles and body are both protected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrivateDocument"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          },
+          "403": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          }
+        }
+      },
+      "post": {
+        "summary": "Submit a private manuscript",
+        "description": "Requires enabled submission group; created_by and UUID/time/version are assigned by the database. Non-admin future submitters can create only drafts. Forum manuscripts need at least one valid floor and empty body_markdown; wiki/story need nonempty body_markdown and empty forum_posts.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submission"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "With Prefer: return=representation, the created document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrivateDocument"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          },
+          "403": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a manuscript",
+        "description": "Admins may edit/publish any manuscript. Future submitters may edit only their own drafts while submission permission remains enabled. Kind is immutable. Supply both id and previous updated_at; request Prefer: return=representation and verify one returned row. Empty results mean conflict or unavailable target.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<UUID> for one manuscript"
+          },
+          {
+            "name": "updated_at",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<previous timestamp> for optimistic updates/deletes"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "default": ""
+                  },
+                  "category": {
+                    "type": "string",
+                    "maxLength": 80,
+                    "default": ""
+                  },
+                  "author_name": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "default": ""
+                  },
+                  "body_markdown": {
+                    "type": "string",
+                    "maxLength": 500000,
+                    "default": ""
+                  },
+                  "forum_posts": {
+                    "type": "array",
+                    "maxItems": 1000,
+                    "items": {
+                      "$ref": "#/components/schemas/ForumPost"
+                    },
+                    "default": []
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "published"
+                    ],
+                    "default": "draft"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated rows; check row count.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrivateDocument"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          },
+          "403": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          }
+        }
+      },
+      "delete": {
+        "summary": "Permanently delete an editable manuscript and its grants",
+        "description": "Same ownership/admin condition as editing. Keep URL tombstones so bookmarks render an unavailable shell. Check returned row count.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<UUID> for one manuscript"
+          },
+          {
+            "name": "updated_at",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<previous timestamp> for optimistic updates/deletes"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted row with Prefer: return=representation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrivateDocument"
+                  }
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Deleted without representation; use a representation to detect conflicts."
+          },
+          "403": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          }
+        }
+      }
+    },
+    "/rest/v1/content_user_grants": {
+      "get": {
+        "summary": "Admin-only per-document user ACL",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<UUID>"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Only administrators can see entries. Use count=exact and pagination.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "document_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "user_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          }
+        }
+      }
+    },
+    "/rest/v1/content_group_grants": {
+      "get": {
+        "summary": "Admin-only per-document group ACL",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "eq.<UUID>"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Only administrators can see entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "document_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "user_group": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          }
+        }
+      }
+    },
+    "/rest/v1/rpc/content_set_access": {
+      "post": {
+        "summary": "Atomically replace one manuscript reading ACL",
+        "description": "Admin only. Both sets are replaced in one transaction; empty arrays mean admin-only. A stale expected version returns SQLSTATE 40001. Invalid users roll back the entire change. This changes access_version, not the manuscript updated_at.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_document_id",
+                  "p_users",
+                  "p_groups",
+                  "p_expected_version"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "p_document_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "p_users": {
+                    "type": "array",
+                    "maxItems": 1000,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "p_groups": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "p_expected_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New access version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          },
+          "403": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          },
+          "409": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          }
+        }
+      }
+    },
+    "/rest/v1/rpc/content_can_submit": {
+      "post": {
+        "summary": "Read current account-group submission capability",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Permission checked against current stored group.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "PostgREST error. 42501: forbidden; 40001: stale access version; P0002: unavailable; constraint failures reject malformed or oversized content."
+          }
+        }
+      }
+    },
+    "/rest/v1/rpc/content_account_groups": {
+      "post": {
+        "summary": "Read current account group names",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Currently guest and admin; clients must accept future groups.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/v1/private_content_routes": {
+      "get": {
+        "summary": "Anonymous path-only projection for Pages builds",
+        "description": "The only anonymous projection. Contains no title, kind, status, author, body, timestamps or grants. Use select=path, order=path.asc, limit=500, and path=gt.<last path> until an empty page. Deleted manuscripts retain their opaque path. Build failure must stop deployment.",
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "select",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Opaque URL catalogue.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "path"
+                    ],
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "pattern": "^/private/[0-9a-f-]{36}$"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apikey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "apikey",
+        "description": "Publishable or legacy anon key only."
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Authenticated user session; never a service secret."
+      }
+    },
+    "schemas": {
+      "ForumPost": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "floor",
+          "author",
+          "body",
+          "isOriginalPoster"
+        ],
+        "properties": {
+          "floor": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Consecutive array order starting at 1."
+          },
+          "author": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200000
+          },
+          "isOriginalPoster": {
+            "type": "boolean",
+            "description": "Must equal whether author matches the first floor author."
+          }
+        }
+      },
+      "Submission": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "title"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "wiki",
+              "story",
+              "forum"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "default": ""
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 80,
+            "default": ""
+          },
+          "author_name": {
+            "type": "string",
+            "maxLength": 50,
+            "default": ""
+          },
+          "body_markdown": {
+            "type": "string",
+            "maxLength": 500000,
+            "default": ""
+          },
+          "forum_posts": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/ForumPost"
+            },
+            "default": []
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published"
+            ],
+            "default": "draft"
+          }
+        }
+      },
+      "PrivateDocument": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "wiki",
+              "story",
+              "forum"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "default": ""
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 80,
+            "default": ""
+          },
+          "author_name": {
+            "type": "string",
+            "maxLength": 50,
+            "default": ""
+          },
+          "body_markdown": {
+            "type": "string",
+            "maxLength": 500000,
+            "default": ""
+          },
+          "forum_posts": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/ForumPost"
+            },
+            "default": []
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published"
+            ],
+            "default": "draft"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "access_version": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    }
+  }
+}

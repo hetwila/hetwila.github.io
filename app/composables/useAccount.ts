@@ -19,7 +19,7 @@ export function useAccount() {
     if (import.meta.server || !configured) throw new Error('账号服务尚未配置完成。')
     clientPromise ??= (async () => {
       const { createClient } = await import('@supabase/supabase-js')
-      const api = createClient(config.supabaseUrl, config.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } })
+      const api = createClient(config.supabaseUrl, config.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }, global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }) } })
       api.auth.onAuthStateChange((_event, session) => {
         if (user.value?.id !== session?.user.id) profile.value = null
         user.value = session?.user ?? null
