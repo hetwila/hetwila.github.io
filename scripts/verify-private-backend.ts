@@ -33,7 +33,20 @@ begin
   if not public.content_can_submit() then raise exception 'admin submission denied'; end if;
   insert into public.private_documents(kind,title,body_markdown,status) values ('story','${label}','Transaction-only private body','published') returning id into target;
   if (select count(*) from public.private_documents where id=target) <> 1 then raise exception 'admin read failed'; end if;
+  if (select age_rating from public.private_documents where id=target) <> 'general' then raise exception 'rating default failed'; end if;
+  begin
+    update public.private_documents set age_rating='invalid' where id=target;
+    raise exception 'invalid rating allowed';
+  exception when check_violation then null; end;
+  update public.private_documents set age_rating='r18' where id=target;
+  if (select age_rating from public.private_documents where id=target) <> 'r18' then raise exception 'rating update failed'; end if;
   perform set_config('request.jwt.claims','${claims(guest)}',true);
+  if (select show_sensitive_content from public.account_profiles where id='${guest}') is distinct from false then raise exception 'sensitive preference default failed'; end if;
+  update public.account_profiles set show_sensitive_content=true where id='${guest}';
+  if (select show_sensitive_content from public.account_profiles where id='${guest}') is distinct from true then raise exception 'sensitive preference update failed'; end if;
+  update public.account_profiles set show_sensitive_content=true where id='${admin}';
+  get diagnostics changed = row_count;
+  if changed <> 0 then raise exception 'preference ownership bypass'; end if;
   if public.content_can_submit() then raise exception 'guest submission enabled'; end if;
   if (select count(*) from public.private_documents where id=target) <> 0 then raise exception 'ungranted reader leaked'; end if;
   begin
@@ -77,7 +90,7 @@ const cleanup = await sql(`select
   (select count(*)::int from public.account_profiles where id in ('${admin}','${guest}')) as profiles,
   (select count(*)::int from public.private_documents where title='${label}') as manuscripts;`)
 if (cleanup[0]?.users !== 0 || cleanup[0]?.profiles !== 0 || cleanup[0]?.manuscripts !== 0) throw new Error('Verification fixtures were not fully rolled back.')
-console.log('Deployed RLS: admin submission, user/group reads, draft isolation, edit/ACL denial, conflicts and revocation verified; transaction fixtures fully rolled back.')
+console.log('Deployed RLS: admin submission, user/group reads, ratings, self-only sensitive preference, draft isolation, edit/ACL denial, conflicts and revocation verified; transaction fixtures fully rolled back.')
 
 for (const [table, column] of [['private_documents', 'id'], ['content_user_grants', 'document_id'], ['content_group_grants', 'document_id'], ['content_submission_permissions', 'user_group']]) {
   const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=${column}&limit=1`, { headers: { apikey: supabaseKey }, signal: AbortSignal.timeout(20000) })

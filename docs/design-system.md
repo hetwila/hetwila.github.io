@@ -156,9 +156,9 @@ Tailwind 生成 CSS 和 Nuxt UI 合并类名是两件事。自定义 `text-card`
 
 ## 私有内容与投稿
 
-私有阅读页复用 `article-header`、`article-prose`、`max-w-reading`、`UPage` 与 `UContentToc`；论坛复用 `forum-post`、昵称栏、楼号、分页以及同一个 `ForumFanfiction`。私有标记仅使用现有锁图标与中性色 badge，不另造主题、色板或排版尺度。正文和普通文章尽量一致。
+私有阅读页复用 `article-header`、`article-prose`、`max-w-reading`、`UPage` 与 `UContentToc`；论坛复用 `forum-post`、昵称栏、楼号、分页以及同一个 `ForumFanfiction`。私有标记使用现有锁图标与中性色 badge；共用 `AgeRatingBadge` 为“一般”使用 neutral、为“R-18”使用 warning，文字及可访问标签同时说明分级。年龄确认使用居中的 `UPageCard` 与明确的确认／返回按钮；个人偏好使用 `USwitch` 和独立保存按钮。不另造主题、色板或排版尺度。正文和普通文章尽量一致。
 
-`ReadingMarkdown` 与评论共用固定标签渲染器：阅读模式保留章节标题和作用域锚点，评论模式继续把标题降为段落。`private-content.css` 仅补充白名单渲染器的列表、代码与横向表格边界，字号、边框、表面、圆角与间距均读取既有语义变量。
+`ReadingMarkdown` 与评论共用固定标签渲染器：阅读模式保留章节标题和作用域锚点，评论模式继续把标题降为段落。`private-content.css` 仅补充白名单渲染器的列表、代码与横向表格边界，字号、边框、表面、圆角与间距均读取既有语义变量。`theme.css` 的 `--ui-warning` 使用浅色800／深色400阶，保证 R-18 soft badge 的文字对比度，组件中不覆盖颜色。
 
 投稿、筛选、预览、授权使用 Nuxt UI 的表单、选择器、复选框、卡片、提示、分页与弹窗。授权用户以 UUID 区分，昵称旁显示邮箱和 ID；搜索选项允许换行，手机不挤出视口。权限为客户端加载，但管理员判断和授权仍由 RLS 执行。静态空壳只保留通用标题、登录说明与无脚本提示。
 

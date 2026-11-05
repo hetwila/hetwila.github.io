@@ -8,7 +8,7 @@ export const privateText = '## 开始阅读\n\n**这是一段私有正文。**\n
 export async function privateFixture(page: Page, group?: 'guest' | 'admin') {
   const account = await accountFixture(page, group)
   const time = '2026-10-31T00:00:00.000Z'
-  const documents: PrivateDocument[] = [{ id: privateId, kind: 'story', title: '仅限授权的手稿', description: '一份私有阅读稿。', category: '短篇', author_name: '投稿作者', body_markdown: privateText, forum_posts: [], status: 'published', created_by: userId, created_at: time, updated_at: time, access_version: 1 }]
+  const documents: PrivateDocument[] = [{ id: privateId, kind: 'story', age_rating: 'general', title: '仅限授权的手稿', description: '一份私有阅读稿。', category: '短篇', author_name: '投稿作者', body_markdown: privateText, forum_posts: [], status: 'published', created_by: userId, created_at: time, updated_at: time, access_version: 1 }]
   const state = { allowed: true, failReads: false, failWrites: false, stale: false, accessStale: false, delayRead: 0, userGrants: [] as string[], groupGrants: [] as string[] }
   const requests: { method: string; path: string; body: any; url: string }[] = []
   const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-expose-headers': 'content-range' }
@@ -40,8 +40,10 @@ export async function privateFixture(page: Page, group?: 'guest' | 'admin') {
       if (state.delayRead) await new Promise(resolve => setTimeout(resolve, state.delayRead))
       if (state.failReads) return send({ message: 'temporary failure' }, 503)
       const visible = documents.filter(d => group === 'admin' || (state.allowed && group && d.status === 'published'))
-      if (eq('id')) return send(visible.find(d => d.id === eq('id')) || null)
-      return range(visible.filter(d => !eq('kind') || d.kind === eq('kind')))
+      const columns = url.searchParams.get('select')
+      const project = (row: PrivateDocument) => !columns || columns === '*' ? row : Object.fromEntries(columns.split(',').map(key => [key, row[key as keyof PrivateDocument]]))
+      if (eq('id')) { const row = visible.find(d => d.id === eq('id')); return send(row ? project(row) : null) }
+      return range(visible.filter(d => !eq('kind') || d.kind === eq('kind')).map(project))
     }
     if (state.failWrites) return send({ code: '503', message: 'temporary failure' }, 503)
     if (method === 'POST') {

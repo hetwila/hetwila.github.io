@@ -4,7 +4,7 @@ export const passwordSchema = z.string().min(8, '密码至少8个字符。').max
 export const loginSchema = z.object({ email: z.string().trim().email('请输入邮箱格式的地址。').max(254), password: z.string().min(1, '请填写密码。') })
 export const registerSchema = loginSchema.extend({ password: passwordSchema, confirmPassword: z.string(), nickname: nicknameSchema, inviteCode: z.string().trim().regex(/^[A-Z0-9]{6}$/, '邀请码为6位大写字母或数字。') }).refine(s => s.password === s.confirmPassword, { path: ['confirmPassword'], message: '两次输入的密码不一致。' })
 export const changePasswordSchema = z.object({ oldPassword: z.string().min(1, '请填写当前密码。'), password: passwordSchema, confirmPassword: z.string() }).refine(s => s.password === s.confirmPassword, { path: ['confirmPassword'], message: '两次输入的密码不一致。' }).refine(s => s.oldPassword !== s.password, { path: ['password'], message: '新密码应与当前密码不同。' })
-export interface AccountProfile { id: string; email: string; nickname: string; user_group: 'guest' | 'admin'; avatar_path: string | null; created_at: string; updated_at: string }
+export interface AccountProfile { id: string; email: string; nickname: string; user_group: 'guest' | 'admin'; avatar_path: string | null; show_sensitive_content: boolean; created_at: string; updated_at: string }
 export interface AccountInvitation { id: string; code: string; valid_from: string; valid_until: string; note: string; created_by: string | null; used_by: string | null; used_at: string | null; deleted_at: string | null; created_at: string; updated_at: string }
 export function safeReturnTo(value: unknown): string {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//') || /[\\\u0000-\u0020]/u.test(value)) return '/'

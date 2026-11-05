@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
-import { privateDocumentSchema, privateKinds, privateIdPattern, privateContentPath, type PrivateDocument, type PrivateForumPost, type PrivateKind } from '#shared/private-content'
+import { privateDocumentSchema, privateKinds, ageRatings, type AgeRating, privateIdPattern, privateContentPath, type PrivateDocument, type PrivateForumPost, type PrivateKind } from '#shared/private-content'
 import { privateReadingPath } from '~/utils/private-content'
 import AccountFrame from '~/components/account/AccountFrame.vue'
 import PrivateArticle from '~/components/private/PrivateArticle.vue'
@@ -8,7 +8,7 @@ import PrivateForum from '~/components/private/PrivateForum.vue'
 import PrivateAccess from '~/components/private/PrivateAccess.vue'
 const { account, canSubmit } = usePrivateContent(), route = useRoute()
 const id = computed(() => typeof route.query.id === 'string' ? route.query.id : '')
-const form = reactive({ kind: 'story' as PrivateKind, title: '', description: '', category: '', author_name: '', body_markdown: '', forum_posts: [] as PrivateForumPost[], status: 'draft' as 'draft' | 'published' })
+const form = reactive({ kind: 'story' as PrivateKind, age_rating: 'general' as AgeRating, title: '', description: '', category: '', author_name: '', body_markdown: '', forum_posts: [] as PrivateForumPost[], status: 'draft' as 'draft' | 'published' })
 const original = shallowRef<PrivateDocument | null>(null)
 const loading = ref(false), saving = ref(false), error = ref(''), message = ref(''), preview = ref(false), deleting = ref(false), dirty = ref(false)
 const discarding = ref(false)
@@ -27,7 +27,7 @@ const editable = computed(() => account.isAdmin.value || (canSubmit.value && (!o
 const previewDocument = computed<PrivateDocument>(() => ({ id: original.value?.id || '00000000-0000-4000-8000-000000000000', created_by: account.user.value?.id || null, created_at: '', updated_at: '', access_version: 1, ...form }))
 function reset() {
   settingForm = true
-  Object.assign(form, { kind: 'story', title: '', description: '', category: '', author_name: '', body_markdown: '', forum_posts: [], status: 'draft' })
+  Object.assign(form, { kind: 'story', age_rating: 'general', title: '', description: '', category: '', author_name: '', body_markdown: '', forum_posts: [], status: 'draft' })
   original.value = null; dirty.value = false; preview.value = false
   settingForm = false
 }
@@ -43,7 +43,7 @@ async function load() {
     if (failure || !data) throw failure || new Error('unavailable')
     original.value = data
     settingForm = true
-    for (const key of ['kind', 'title', 'description', 'category', 'author_name', 'body_markdown', 'forum_posts', 'status'] as const) Object.assign(form, { [key]: structuredClone(data[key]) })
+    for (const key of ['kind', 'age_rating', 'title', 'description', 'category', 'author_name', 'body_markdown', 'forum_posts', 'status'] as const) Object.assign(form, { [key]: structuredClone(data[key]) })
     dirty.value = false; settingForm = false
   } catch { if (current === request) error.value = '内容不可用或读取失败。请确认权限后重试。' }
   finally { if (current === request) loading.value = false }
@@ -109,6 +109,7 @@ onBeforeUnmount(() => { request++; reset(); finishDiscard(false); window.removeE
       <template v-if="!id || original">
         <UForm :schema="privateDocumentSchema" :state="submissionState" class="space-y-5" @submit="save">
           <UFormField label="内容类型" name="kind"><USelect v-model="form.kind" :items="Object.entries(privateKinds).map(([value, label]) => ({ value, label }))" :disabled="Boolean(original) || saving" @update:model-value="chooseKind" /></UFormField>
+          <UFormField label="年龄分级" name="age_rating" description="一般或 R-18。分级会显示在目录和阅读页；论坛分级适用于整帖所有楼层。"><USelect v-model="form.age_rating" :items="Object.entries(ageRatings).map(([value, label]) => ({ value, label }))" :disabled="saving" /></UFormField>
           <UFormField label="标题" name="title" required><UInput v-model="form.title" class="w-full" maxlength="200" :disabled="saving" /></UFormField>
           <UFormField label="简介" name="description"><UTextarea v-model="form.description" class="w-full" :rows="3" :disabled="saving" /></UFormField>
           <div class="grid gap-4 sm:grid-cols-2"><UFormField label="分类" name="category"><UInput v-model="form.category" class="w-full" :disabled="saving" /></UFormField><UFormField label="作品署名" name="author_name"><UInput v-model="form.author_name" class="w-full" :disabled="saving" /></UFormField></div>

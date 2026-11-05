@@ -10,6 +10,9 @@ const id = '11111111-1111-4111-8111-111111111111'
 test('private submissions validate long-form prose, consecutive floors and existing fanfiction boundaries', () => {
   const base = { kind: 'story', title: '标题', description: '', category: '', author_name: '', body_markdown: '正文。', forum_posts: [], status: 'draft' }
   assert.equal(privateDocumentSchema.parse(base).body_markdown, '正文。')
+  assert.equal(privateDocumentSchema.parse(base).age_rating, 'general')
+  assert.equal(privateDocumentSchema.parse({ ...base, age_rating: 'r18' }).age_rating, 'r18')
+  for (const age_rating of ['R-18', 'unknown', null]) assert.equal(privateDocumentSchema.safeParse({ ...base, age_rating }).success, false)
   assert.equal(privateDocumentSchema.safeParse({ ...base, body_markdown: ' ' }).success, false)
   const forum = { ...base, kind: 'forum', body_markdown: '', forum_posts: [{ floor: 1, author: '楼主', isOriginalPoster: true, body: '聊天。\n\n<!-- fanfiction: 一 -->\n\n## 篇名\n\n### 第一节\n\n文章。\n\n<!-- /fanfiction -->\n\n继续聊天。' }] }
   assert.ok(privateDocumentSchema.safeParse(forum).success)

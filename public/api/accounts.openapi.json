@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "赫特维拉独立用户 API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "部署到 Supabase 后使用。替换 projectRef，并携带公开 apikey 与用户访问令牌。guest/admin 由数据库控制，禁止向普通客户端提供 service_role 或 secret key。注册必须由用户完成 Turnstile；其余授权操作可通过 HTTP 直接调用。"
   },
   "servers": [
@@ -325,7 +325,7 @@
       },
       "patch": {
         "operationId": "updateNickname",
-        "summary": "仅修改本人的昵称",
+        "summary": "仅修改本人的昵称或敏感内容阅读偏好",
         "security": [
           {
             "apiKey": [],
@@ -381,12 +381,15 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 50
+                  },
+                  "show_sensitive_content": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "是否默认显示 R-18 内容。默认关闭，只能由本人保存。开启表示已年满18周岁；单次年龄确认不修改此字段，不改变阅读权限。"
                   }
                 },
-                "required": [
-                  "nickname"
-                ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "minProperties": 1
               }
             }
           }
@@ -991,6 +994,11 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "show_sensitive_content": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否默认显示 R-18 内容。默认关闭，只能由本人保存。开启表示已年满18周岁；单次年龄确认不修改此字段，不改变阅读权限。"
           }
         },
         "required": [],

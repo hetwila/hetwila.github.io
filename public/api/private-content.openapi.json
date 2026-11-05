@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "赫特维拉私有内容与投稿 API",
-    "version": "1.0.0",
-    "description": "Private manuscripts live only in Supabase. Authorization is enforced by grants and RLS on every request. Admins read/manage all content; ordinary readers require a published document and a per-user OR current account-group grant. Submission is separately controlled by content_submission_permissions (initially admin only). Forum nicknames are fictional text, not account identities."
+    "version": "1.1.0",
+    "description": "Private manuscripts live only in Supabase. Authorization is enforced by grants and RLS on every request. Admins read/manage all content; ordinary readers require a published document and a per-user OR current account-group grant. Submission is separately controlled by content_submission_permissions (initially admin only). Forum nicknames are fictional text, not account identities. Age ratings are general (default) or r18 for every kind. A rating is a reading preference, not an access grant: clients must confirm adulthood before showing r18 unless the current profile has show_sensitive_content=true. Single-read confirmation must never PATCH that preference."
   },
   "servers": [
     {
@@ -40,7 +40,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "List projection should omit body_markdown and forum_posts"
+            "description": "List and initial reading requests include age_rating but omit body_markdown and forum_posts. Fetch the body only after confirming the current profile preference or obtaining confirmation for this document visit; recheck age_rating in the full response."
           },
           {
             "name": "kind",
@@ -201,6 +201,15 @@
                       "published"
                     ],
                     "default": "draft"
+                  },
+                  "age_rating": {
+                    "type": "string",
+                    "enum": [
+                      "general",
+                      "r18"
+                    ],
+                    "default": "general",
+                    "description": "一般 / R-18; applies to the entire article or forum thread. Changing it updates updated_at."
                   }
                 }
               }
@@ -495,7 +504,7 @@
     "/rest/v1/private_content_routes": {
       "get": {
         "summary": "Anonymous path-only projection for Pages builds",
-        "description": "The only anonymous projection. Contains no title, kind, status, author, body, timestamps or grants. Use select=path, order=path.asc, limit=500, and path=gt.<last path> until an empty page. Deleted manuscripts retain their opaque path. Build failure must stop deployment.",
+        "description": "The only anonymous projection. Contains no title, kind, age rating, status, author, body, timestamps or grants. Use select=path, order=path.asc, limit=500, and path=gt.<last path> until an empty page. Deleted manuscripts retain their opaque path. Build failure must stop deployment.",
         "security": [
           {
             "apikey": []
@@ -662,6 +671,15 @@
               "published"
             ],
             "default": "draft"
+          },
+          "age_rating": {
+            "type": "string",
+            "enum": [
+              "general",
+              "r18"
+            ],
+            "default": "general",
+            "description": "一般 / R-18; applies to the entire article or forum thread. Changing it updates updated_at."
           }
         }
       },
@@ -739,6 +757,15 @@
           "access_version": {
             "type": "integer",
             "minimum": 1
+          },
+          "age_rating": {
+            "type": "string",
+            "enum": [
+              "general",
+              "r18"
+            ],
+            "default": "general",
+            "description": "一般 / R-18; applies to the entire article or forum thread. Changing it updates updated_at."
           }
         }
       }

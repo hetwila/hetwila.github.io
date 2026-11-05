@@ -8,6 +8,7 @@ import { privateForumPath, type PrivateDocument } from '#shared/private-content'
 import { renderReadingMarkdown } from '#shared/comment-markdown'
 import ForumFanfiction from '~/components/content/ForumFanfiction.vue'
 import ReadingMarkdown from './ReadingMarkdown.vue'
+import AgeRatingBadge from './AgeRatingBadge.vue'
 const props = defineProps<{ document: PrivateDocument; basePath: string; preview?: boolean }>()
 const route = useRoute()
 const page = computed(() => props.preview ? 1 : Number(route.query.page || 1))
@@ -36,7 +37,7 @@ async function jump() { const floor = Number(jumpFloor.value); if (Number.isInte
 <template>
   <div>
     <header class="forum-thread-heading rounded-card border border-default bg-raised p-panel">
-      <div class="mb-4 flex flex-wrap items-center gap-inline"><UBadge v-if="document.category" variant="soft">{{ document.category }}</UBadge><UBadge color="neutral" variant="subtle" icon="i-lucide-lock-keyhole">私有</UBadge><span v-if="document.status === 'draft'" class="text-caption text-muted">草稿</span></div>
+      <div class="mb-4 flex flex-wrap items-center gap-inline"><UBadge v-if="document.category" variant="soft">{{ document.category }}</UBadge><UBadge color="neutral" variant="subtle" icon="i-lucide-lock-keyhole">私有</UBadge><AgeRatingBadge :rating="document.age_rating" /><span v-if="document.status === 'draft'" class="text-caption text-muted">草稿</span></div>
       <h1 class="font-semibold text-section leading-heading text-highlighted">{{ document.title }}</h1>
       <p v-if="document.description" class="mt-4 text-detail leading-copy text-muted">{{ document.description }}</p>
       <p class="mt-5 flex flex-wrap gap-inline text-caption text-muted"><span>{{ all[0]?.author }} 发起</span><span>{{ Math.max(0, all.length - 1) }} 条回复</span><span>{{ new Set(all.map(post => post.author)).size }} 位参与者</span></p>

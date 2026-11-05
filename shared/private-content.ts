@@ -3,17 +3,20 @@ import { parseForumBody } from './forum-body.ts'
 
 export const privateKinds = { wiki: '百科', story: '故事', forum: '论坛帖子' } as const
 export type PrivateKind = keyof typeof privateKinds
+export const ageRatings = { general: '一般', r18: 'R-18' } as const
+export type AgeRating = keyof typeof ageRatings
 export const privateIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u
 export interface PrivateForumPost { floor: number; author: string; body: string; isOriginalPoster: boolean }
 export interface PrivateDocument {
   id: string; kind: PrivateKind; title: string; description: string; category: string; author_name: string
-  body_markdown: string; forum_posts: PrivateForumPost[]; status: 'draft' | 'published'
+  body_markdown: string; forum_posts: PrivateForumPost[]; status: 'draft' | 'published'; age_rating: AgeRating
   created_by: string | null; created_at: string; updated_at: string; access_version: number
 }
 export type PrivateDocumentSummary = Omit<PrivateDocument, 'body_markdown' | 'forum_posts'>
-export const privateSummaryColumns = 'id,kind,title,description,category,author_name,status,created_by,created_at,updated_at,access_version'
+export const privateSummaryColumns = 'id,kind,title,description,category,author_name,status,age_rating,created_by,created_at,updated_at,access_version'
 export const privateDocumentSchema = z.object({
   kind: z.enum(['wiki', 'story', 'forum']),
+  age_rating: z.enum(['general', 'r18']).default('general'),
   title: z.string().trim().min(1, '请填写标题。').max(200, '标题最多200字。'),
   description: z.string().max(2000, '简介最多2000字。'),
   category: z.string().max(80, '分类最多80字。'),

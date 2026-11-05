@@ -92,6 +92,7 @@ test('successful registration consumes exactly one invitation and always starts 
   const session=await login('guest@example.test'); assert.equal(session.status,200); guestToken=session.body.access_token
   const profiles=await rest('/account_profiles','GET',undefined,guestToken)
   assert.equal(profiles.body.length,1); assert.equal(profiles.body[0].user_group,'guest')
+  assert.equal(profiles.body[0].show_sensitive_content, false)
   const codes=await rest('/account_invitations?code=eq.GUEST1'); assert.equal(codes.body[0].used_by,guestId); assert.ok(codes.body[0].used_at)
   assert.notEqual((await register('again@example.test','GUEST1')).status,200)
 })
@@ -331,7 +332,8 @@ test('drafts stay hidden from granted readers and submission can later be enable
   const target = `/private_documents?id=eq.${draft.body[0].id}`
   assert.equal((await rest(target, 'GET', undefined, guestToken)).body.length, 1)
   assert.equal((await rest(target, 'GET', undefined, adminToken)).body.length, 1)
-  assert.equal((await rest(target, 'PATCH', { body_markdown: 'own draft' }, guestToken)).body.length, 1)
+  const edited = await rest(target, 'PATCH', { body_markdown: 'own draft', age_rating: 'r18' }, guestToken)
+  assert.equal(edited.body.length, 1); assert.equal(edited.body[0].age_rating, 'r18')
   assert.equal((await rest(target, 'PATCH', { status: 'published' }, guestToken)).status, 403)
   sql("update public.content_submission_permissions set can_submit=false where user_group='guest'")
   assert.deepEqual((await rest(target, 'PATCH', { body_markdown: 'revoked author' }, guestToken)).body, [])
@@ -370,4 +372,43 @@ test('the anonymous build projection returns only opaque routes, including tombs
   assert.deepEqual((await rest(`/content_user_grants?document_id=eq.${privateId}`)).body, [])
   assert.deepEqual((await rest(`/content_group_grants?document_id=eq.${privateId}`)).body, [])
   assert.ok((await rest('/private_content_routes', 'GET', undefined, anonToken)).body.some((r: { path: string }) => r.path === `/private/${privateId}`))
+})
+
+test('sensitive reading preferences are persistent, self-only and cannot grant manuscript access', async () => {
+  const target = `/account_profiles?id=eq.${guestId}`
+  assert.equal((await rest(target, 'GET', undefined, guestToken)).body[0].show_sensitive_content, false)
+  assert.equal((await rest(target, 'PATCH', { show_sensitive_content: true }, guestToken)).body[0].show_sensitive_content, true)
+  assert.equal((await rest(target, 'GET', undefined, guestToken)).body[0].show_sensitive_content, true)
+  assert.deepEqual((await rest(target, 'PATCH', { show_sensitive_content: false }, adminToken)).body, [])
+  assert.deepEqual((await rest(`/account_profiles?id=eq.${adminId}`, 'PATCH', { show_sensitive_content: true }, guestToken)).body, [])
+  assert.equal((await rest(target, 'PATCH', { show_sensitive_content: true }, anonToken)).status, 401)
+  assert.equal((await rest(target, 'PATCH', { show_sensitive_content: null }, guestToken)).status, 400)
+  assert.equal((await rest(target, 'PATCH', { show_sensitive_content: true, user_group: 'admin' }, guestToken)).status, 403)
+  const created = await rest('/private_documents', 'POST', { ...manuscript, age_rating: 'r18' }, adminToken)
+  assert.equal(created.status, 201)
+  const path = `/private_documents?id=eq.${created.body[0].id}`
+  assert.deepEqual((await rest(path, 'GET', undefined, guestToken)).body, [])
+  await rest(path, 'DELETE', undefined, adminToken)
+  assert.equal((await rest(target, 'PATCH', { show_sensitive_content: false }, guestToken)).body[0].show_sensitive_content, false)
+})
+
+test('ratings validate all private types, remain visible to authorized readers and participate in edit conflicts', async () => {
+  for (const kind of ['wiki', 'story', 'forum']) {
+    const fields = kind === 'forum' ? { body_markdown: '', forum_posts: [{ floor: 1, author: '作者', body: '楼层正文。', isOriginalPoster: true }] } : {}
+    const created = await rest('/private_documents', 'POST', { ...manuscript, kind, ...fields }, adminToken)
+    assert.equal(created.status, 201, JSON.stringify(created.body))
+    const row = created.body[0], path = `/private_documents?id=eq.${row.id}`
+    assert.equal(row.age_rating, 'general')
+    for (const age_rating of ['unknown', 'R-18', null]) assert.equal((await rest(path, 'PATCH', { age_rating }, adminToken)).status, 400)
+    const changed = await rest(path, 'PATCH', { age_rating: 'r18' }, adminToken)
+    assert.equal(changed.body[0].age_rating, 'r18')
+    assert.notEqual(changed.body[0].updated_at, row.updated_at)
+    assert.deepEqual((await rest(`${path}&updated_at=eq.${encodeURIComponent(row.updated_at)}`, 'PATCH', { age_rating: 'general' }, adminToken)).body, [])
+    assert.equal((await rest('/rpc/content_set_access', 'POST', { p_document_id: row.id, p_users: [guestId], p_groups: [], p_expected_version: 1 }, adminToken)).status, 200)
+    assert.equal((await rest(`${path}&select=id,title,age_rating`, 'GET', undefined, guestToken)).body[0].age_rating, 'r18')
+    assert.deepEqual((await rest(path, 'PATCH', { age_rating: 'general' }, guestToken)).body, [])
+    assert.equal((await rest(path, 'PATCH', { age_rating: 'general' }, adminToken)).body[0].age_rating, 'general')
+    assert.equal((await rest(`${path}&select=id,title,age_rating`, 'GET', undefined, guestToken)).body[0].age_rating, 'general')
+    await rest(path, 'DELETE', undefined, adminToken)
+  }
 })

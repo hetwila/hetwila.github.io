@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { privateKinds, privateSummaryColumns, type PrivateDocumentSummary } from '#shared/private-content'
 import { privateReadingPath } from '~/utils/private-content'
+import AgeRatingBadge from './AgeRatingBadge.vue'
 const props = defineProps<{ manage?: boolean }>()
 const { account, canSubmit } = usePrivateContent(), route = useRoute()
 const rows = shallowRef<PrivateDocumentSummary[]>([]), page = ref(1), total = ref(0), loading = ref(false), error = ref('')
@@ -38,9 +39,9 @@ onBeforeUnmount(() => { request++; controller?.abort(); rows.value = [] })
       <UEmpty v-else-if="!rows.length" icon="i-lucide-book-open" title="暂无可显示的内容" :description="manage ? '有投稿权限后，可以创建并保存第一篇内容。' : '获得阅读权限的文章和帖子会显示在这里。'" />
       <ul v-else class="space-y-4">
         <li v-for="item in rows" :key="item.id" class="rounded-card border border-default bg-raised p-panel">
-          <div class="mb-3 flex flex-wrap gap-2"><UBadge variant="soft">{{ privateKinds[item.kind] }}</UBadge><UBadge color="neutral" variant="subtle">{{ item.status === 'draft' ? '草稿' : '已发布' }}</UBadge><span v-if="item.category" class="text-caption text-muted">{{ item.category }}</span></div>
+          <div class="mb-3 flex flex-wrap gap-2"><UBadge variant="soft">{{ privateKinds[item.kind] }}</UBadge><AgeRatingBadge :rating="item.age_rating" /><UBadge color="neutral" variant="subtle">{{ item.status === 'draft' ? '草稿' : '已发布' }}</UBadge><span v-if="item.category" class="text-caption text-muted">{{ item.category }}</span></div>
           <h2 class="font-serif text-card leading-heading text-highlighted"><NuxtLink :to="privateReadingPath(item.id)" class="hover:text-primary hover:underline">{{ item.title }}</NuxtLink></h2>
-          <p v-if="item.description" class="mt-3 text-muted leading-copy whitespace-pre-line">{{ item.description }}</p>
+          <p v-if="item.description && (item.age_rating === 'general' || account.profile.value?.show_sensitive_content)" class="mt-3 text-muted leading-copy whitespace-pre-line">{{ item.description }}</p>
           <p v-if="item.author_name" class="mt-3 text-caption text-muted">{{ item.author_name }}</p>
           <div v-if="manage && (account.isAdmin.value || (canSubmit && item.status === 'draft' && item.created_by === account.user.value?.id))" class="mt-4"><UButton :to="{ path: '/account/submissions/edit', query: { id: item.id } }" color="neutral" variant="outline" icon="i-lucide-pencil">{{ account.isAdmin.value ? '编辑与权限' : '编辑草稿' }}</UButton></div>
         </li>

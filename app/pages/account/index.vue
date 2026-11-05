@@ -8,6 +8,21 @@ const state = reactive({ nickname:'' }), passwords = reactive({ oldPassword:'',p
 const avatar = ref<Blob | null>(null), cropping = ref(false), busy = ref(false), passwordBusy = ref(false), error = ref(''), passwordError = ref('')
 const destination = computed(() => safeReturnTo(route.query.returnTo))
 watch(account.profile, value => { if (value) state.nickname = value.nickname }, { immediate:true })
+const reading = reactive({ show_sensitive_content: false }), readingBusy = ref(false), readingError = ref('')
+watch(() => account.profile.value?.show_sensitive_content, value => { reading.show_sensitive_content = value === true }, { immediate: true })
+async function saveReading() {
+  const owner = account.user.value?.id
+  if (!owner || !account.profile.value) return
+  readingBusy.value = true; readingError.value = ''
+  try {
+    const { data, error: failure } = await (await account.client()).from('account_profiles').update({ show_sensitive_content: reading.show_sensitive_content }).eq('id', owner).select('id,show_sensitive_content').single()
+    if (owner !== account.user.value?.id) return
+    if (failure || !data) throw new Error('阅读偏好保存失败，请重试。')
+    account.profile.value = { ...account.profile.value!, show_sensitive_content: data.show_sensitive_content }
+    toast.add({ title: '阅读偏好已保存', color: 'success' })
+  } catch { if (owner === account.user.value?.id) readingError.value = '阅读偏好保存失败，请重试。' }
+  finally { readingBusy.value = false }
+}
 async function save() {
   busy.value = true; error.value = ''
   try {
@@ -38,7 +53,7 @@ async function changePassword() {
 async function logout() { try { await account.logout() } catch { error.value = '退出失败，请重试。' } }
 </script>
 <template>
-  <AccountFrame title="个人中心" description="管理你的昵称、头像与登录密码。">
+  <AccountFrame title="个人中心" description="管理你的昵称、头像、阅读偏好与登录密码。">
     <UPageCard v-if="!account.user.value" title="欢迎来到赫特维拉">
       <div class="flex flex-wrap gap-inline"><UButton :to="{path:'/account/login',query:{returnTo:destination}}">登录</UButton><UButton :to="{path:'/account/register',query:{returnTo:destination}}" variant="outline">邀请码注册</UButton></div>
     </UPageCard>
@@ -54,6 +69,16 @@ async function logout() { try { await account.logout() } catch { error.value = '
           <UButton v-if="account.profile.value?.avatar_path" color="neutral" variant="outline" :disabled="busy" @click="removeAvatar">恢复默认头像</UButton>
           <UAlert v-if="error" :title="error" color="error" variant="subtle" />
           <UButton type="submit" :loading="busy" :disabled="cropping">保存资料</UButton>
+        </UForm>
+      </UPageCard>
+      <UPageCard id="reading-preferences" title="阅读偏好">
+        <UForm :schema="z.object({ show_sensitive_content: z.boolean() })" :state="reading" class="space-y-stack" @submit="saveReading">
+          <UFormField name="show_sensitive_content">
+            <USwitch v-model="reading.show_sensitive_content" label="默认显示敏感内容（R-18）" description="开启即表示你已年满18周岁，阅读 R-18 内容时无需逐篇确认。默认关闭；目录始终显示全部有权阅读的内容及其分级。" :disabled="readingBusy || !account.profile.value" />
+          </UFormField>
+          <p class="text-caption text-muted">单次阅读时的年龄确认不会更改此设置。</p>
+          <UAlert v-if="readingError" :title="readingError" color="error" />
+          <UButton type="submit" :loading="readingBusy" :disabled="!account.profile.value">保存阅读偏好</UButton>
         </UForm>
       </UPageCard>
       <UPageCard title="修改密码" description="输入当前密码后才能设置新密码。暂不支持邮件找回。">

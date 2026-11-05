@@ -5,8 +5,9 @@ export async function accountFixture(page:Page,group?:'guest'|'admin') {
   const user={id:userId,email:'reader@example.test',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{},created_at:new Date().toISOString()}
   const accessToken=[{alg:'HS256',typ:'JWT'},{sub:userId,role:'authenticated',exp:Math.floor(Date.now()/1000)+3600},'test-signature'].map(part=>Buffer.from(JSON.stringify(part)).toString('base64url')).join('.')
   const session={user,access_token:accessToken,refresh_token:'test-refresh-token',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer'}
-  const profile={id:userId,email:user.email,nickname:'测试读者',user_group:group||'guest',avatar_path:null as string|null,created_at:user.created_at,updated_at:user.created_at}
+  const profile={id:userId,email:user.email,nickname:'测试读者',user_group:group||'guest',avatar_path:null as string|null,show_sensitive_content:false,created_at:user.created_at,updated_at:user.created_at}
   const requests:{path:string,body:any}[]=[],invitations:any[]=[]
+  const failures = { profileWrites: false }
   let avatarBytes:Buffer|undefined
   // Override only the downloaded test document. Nothing is added to product code.
   await page.route('http://127.0.0.1:4173/**',async route=>{
@@ -37,6 +38,7 @@ export async function accountFixture(page:Page,group?:'guest'|'admin') {
     if(path==='/functions/v1/account-avatar') {avatarBytes=request.postDataBuffer()||undefined;profile.avatar_path=`${userId}/test.png`;return send({avatarPath:profile.avatar_path})}
     if(path.startsWith('/storage/')) return route.fulfill({status:404,headers})
     if(path==='/rest/v1/account_profiles') {
+      if(request.method()==='PATCH' && failures.profileWrites) return send({message:'temporary failure'},503)
       if(request.method()==='PATCH') Object.assign(profile,body)
       return send(url.searchParams.has('id')?profile:[profile],200,{'content-range':'0-0/1'})
     }
@@ -48,6 +50,6 @@ export async function accountFixture(page:Page,group?:'guest'|'admin') {
     if(path==='/rest/v1/rpc/account_delete_invitation') {invitations.splice(0);return route.fulfill({status:204,headers})}
     throw new Error(`Unexpected account request: ${request.method()} ${path}`)
   })
-  return {requests,profile,avatar:()=>avatarBytes}
+  return {requests,profile,failures,avatar:()=>avatarBytes}
 }
 export async function captcha(page:Page) {await page.waitForFunction(()=>typeof (window as any).solveAccountCaptcha==='function');await page.evaluate(()=>(window as any).solveAccountCaptcha())}

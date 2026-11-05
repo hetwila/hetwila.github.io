@@ -51,11 +51,14 @@ test('authorized reading uses article typography, heading anchors and safe Markd
 test('private forum supports chat, embedded fiction, original floors, author filter and cross-page links', async ({ page }) => {
   const fixture = await privateFixture(page, 'guest')
   const row = fixture.documents[0]!
-  row.kind = 'forum'; row.title = '私有论坛主题'; row.body_markdown = ''
+  row.kind = 'forum'; row.title = '私有论坛主题'; row.body_markdown = ''; row.age_rating = 'r18'
   row.forum_posts = Array.from({ length: 21 }, (_, index) => ({ floor: index + 1, author: index === 0 || index === 20 ? '作品楼主' : '作品读者', isOriginalPoster: index === 0 || index === 20, body: `第${index + 1}层聊天。` }))
   row.forum_posts[0]!.body = '篇前聊天，见21L。\n\n<!-- fanfiction: 第一篇 -->\n\n## 第一篇长文\n\n### 一\n\n长文内部出现2L保持原文。\n\n<!-- /fanfiction -->\n\n篇后聊天。'
   row.forum_posts[20]!.body = '<!-- fanfiction: 第二篇 -->\n\n## 第二篇长文\n\n### 一\n\n第二篇的正文。\n\n<!-- /fanfiction -->'
   await page.goto(privateReader)
+  await expect(page.getByRole('heading', { name: '年龄确认', exact: true })).toBeVisible()
+  await expect(page.locator('.forum-posts')).toHaveCount(0)
+  await page.getByRole('button', { name: '我已年满18周岁，继续阅读' }).click()
   await expect(page.locator('.forum-posts > article')).toHaveCount(20)
   await expect(page.locator('.forum-fanfiction')).toHaveCount(1)
   await expect(page.getByText('篇后聊天。')).toBeVisible()
@@ -64,6 +67,8 @@ test('private forum supports chat, embedded fiction, original floors, author fil
   await expect(page).toHaveURL(/page=2#post-21-fanfiction/)
   await expect(page.locator('#post-21 .fanfiction-title')).toHaveText('第二篇长文')
   await page.reload()
+  await expect(page.getByRole('heading', { name: '年龄确认', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '我已年满18周岁，继续阅读' }).click()
   await expect(page.locator('#post-21')).toBeVisible()
   await page.getByRole('link', { name: '只看楼主', exact: true }).click()
   await expect(page.locator('.forum-posts > article')).toHaveCount(2)
@@ -76,6 +81,8 @@ test('admin can submit, preview, recover a failed save and configure each manusc
   const fixture = await privateFixture(page, 'admin')
   await page.goto('/account/submissions/edit')
   await page.getByLabel('标题', { exact: true }).fill('新投稿测试')
+  await page.getByLabel('年龄分级', { exact: true }).click()
+  await page.getByRole('option', { name: 'R-18', exact: true }).click()
   await page.getByLabel('正文 Markdown', { exact: true }).fill('## 第一节\n\n一篇新的私有故事。')
   await page.getByRole('button', { name: '预览排版' }).click()
   await expect(page.getByRole('region', { name: '投稿预览' }).getByRole('heading', { name: '第一节' })).toBeVisible()
@@ -88,6 +95,8 @@ test('admin can submit, preview, recover a failed save and configure each manusc
   await expect(page).toHaveURL(/\/account\/submissions\/edit\?id=/)
   await expect(page.getByRole('heading', { name: '阅读权限', exact: true })).toBeVisible()
   await expect(page.getByLabel('标题', { exact: true })).toHaveValue('新投稿测试')
+  expect(fixture.documents.at(-1)?.age_rating).toBe('r18')
+  await expect(page.getByLabel('年龄分级', { exact: true })).toHaveText('R-18')
   await page.getByRole('checkbox', { name: 'guest', exact: true }).check()
   await page.getByRole('button', { name: '保存阅读权限', exact: true }).click()
   await expect(page.getByText('阅读权限已保存。', { exact: true })).toBeVisible()
@@ -144,6 +153,7 @@ test('forum submission preserves mixed prose and warns before discarding an unsa
   await expect(page.getByLabel('第1楼正文', { exact: true })).toHaveValue(body)
   await page.getByRole('button', { name: '保存投稿', exact: true }).click()
   await expect(page).toHaveURL(/\/account\/submissions\/edit\?id=/)
+  expect(fixture.documents.at(-1)?.age_rating).toBe('general')
   expect(fixture.documents.at(-1)?.forum_posts).toEqual([
     { floor: 1, author: '原稿楼主', body, isOriginalPoster: true },
     { floor: 2, author: '讨论者', body: '继续讨论。', isOriginalPoster: false },
@@ -153,11 +163,98 @@ test('forum submission preserves mixed prose and warns before discarding an unsa
   await expect(page.getByText('继续讨论。', { exact: true })).toBeVisible()
 })
 
+test('both ratings remain in the directory; a confirmation is local to the current manuscript and never saves a preference', async ({ page }) => {
+  const fixture = await privateFixture(page, 'guest')
+  const sensitive = { ...fixture.documents[0]!, id: '22222222-2222-4222-8222-222222222222', age_rating: 'r18' as const, title: '分级为 R-18 的手稿', description: '需要确认后才展示的简介。' }
+  fixture.documents.push(sensitive)
+  await page.goto('/private')
+  await expect(page.getByRole('link', { name: '仅限授权的手稿', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: sensitive.title, exact: true })).toBeVisible()
+  await expect(page.getByLabel('年龄分级：一般', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('年龄分级：R-18', { exact: true })).toBeVisible()
+  await expect(page.getByText(sensitive.description)).toHaveCount(0)
+  await page.getByRole('link', { name: sensitive.title, exact: true }).click()
+  await expect(page.getByRole('heading', { name: '年龄确认', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: '个人资料页的阅读偏好' })).toHaveAttribute('href', '/account#reading-preferences')
+  expect(fixture.contentRequests.filter(r => r.path === 'private_documents' && new URL(r.url).searchParams.get('select') === '*')).toHaveLength(0)
+  await expect(page.getByText('最后一段私有文章。')).toHaveCount(0)
+  await page.getByRole('link', { name: '返回目录', exact: true }).click()
+  await page.getByRole('link', { name: sensitive.title, exact: true }).click()
+  await page.getByRole('button', { name: '我已年满18周岁，继续阅读' }).click()
+  await expect(page.getByText('最后一段私有文章。')).toBeVisible()
+  expect(fixture.profile.show_sensitive_content).toBe(false)
+  expect(fixture.requests.filter(r => r.body && 'show_sensitive_content' in r.body)).toHaveLength(0)
+  await page.getByRole('link', { name: '返回可阅读内容', exact: true }).click()
+  await page.getByRole('link', { name: sensitive.title, exact: true }).click()
+  await expect(page.getByRole('heading', { name: '年龄确认', exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: '年龄确认', exact: true })).toBeVisible()
+  await page.getByRole('link', { name: '返回目录', exact: true }).click()
+  await page.getByRole('link', { name: '仅限授权的手稿', exact: true }).click()
+  await expect(page.getByText('最后一段私有文章。')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '年龄确认', exact: true })).toHaveCount(0)
+})
+
+test('the profile preference defaults off, persists only on save and can be disabled again without changing the directory', async ({ page }) => {
+  const fixture = await privateFixture(page, 'guest')
+  fixture.documents[0]!.age_rating = 'r18'
+  await page.goto('/account#reading-preferences')
+  const toggle = page.getByRole('switch', { name: '默认显示敏感内容（R-18）', exact: true })
+  await expect(toggle).not.toBeChecked()
+  await toggle.check()
+  expect(fixture.profile.show_sensitive_content).toBe(false)
+  fixture.failures.profileWrites = true
+  await page.getByRole('button', { name: '保存阅读偏好', exact: true }).click()
+  await expect(page.getByText('阅读偏好保存失败，请重试。', { exact: true })).toBeVisible()
+  expect(fixture.profile.show_sensitive_content).toBe(false)
+  await expect(toggle).toBeChecked()
+  fixture.failures.profileWrites = false
+  await page.getByRole('button', { name: '保存阅读偏好', exact: true }).click()
+  await expect(page.getByText('阅读偏好已保存', { exact: true })).toBeVisible()
+  expect(fixture.profile.show_sensitive_content).toBe(true)
+  await page.reload()
+  await expect(toggle).toBeChecked()
+  await page.getByRole('link', { name: '可阅读内容', exact: true }).click()
+  await expect(page.getByLabel('年龄分级：R-18', { exact: true })).toBeVisible()
+  await page.getByRole('link', { name: '仅限授权的手稿', exact: true }).click()
+  await expect(page.getByText('最后一段私有文章。')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '年龄确认', exact: true })).toHaveCount(0)
+  await page.getByRole('link', { name: '用户中心', exact: true }).click()
+  await toggle.uncheck()
+  await page.getByRole('button', { name: '保存阅读偏好', exact: true }).click()
+  await expect.poll(() => fixture.profile.show_sensitive_content).toBe(false)
+  await page.getByRole('link', { name: '可阅读内容', exact: true }).click()
+  await page.getByRole('link', { name: '仅限授权的手稿', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '年龄确认', exact: true })).toBeVisible()
+})
+
+test('a rating changed during loading is confirmed before rendering; confirmation never bypasses a revoked grant', async ({ page }) => {
+  const fixture = await privateFixture(page, 'guest')
+  await page.route('https://account.example.test/rest/v1/private_documents?**', async route => {
+    if (new URL(route.request().url()).searchParams.get('select') === '*') fixture.documents[0]!.age_rating = 'r18'
+    await route.fallback()
+  })
+  await page.goto(privateReader)
+  await expect(page.getByRole('heading', { name: '年龄确认', exact: true })).toBeVisible()
+  await expect(page.getByText('最后一段私有文章。')).toHaveCount(0)
+  fixture.state.allowed = false
+  await page.getByRole('button', { name: '我已年满18周岁，继续阅读' }).click()
+  await expect(page.getByRole('heading', { name: '内容不可用', exact: true })).toBeVisible()
+  await expect(page.getByText('最后一段私有文章。')).toHaveCount(0)
+})
+
 for (const viewport of [{ width: 1280, height: 900 }, { width: 375, height: 812 }]) for (const colorScheme of ['light', 'dark'] as const) {
   test(`private reading and submission are accessible at ${viewport.width} in ${colorScheme}`, async ({ page }) => {
     await page.setViewportSize(viewport); await page.emulateMedia({ colorScheme })
-    await privateFixture(page, 'admin')
+    const fixture = await privateFixture(page, 'admin')
+    fixture.documents[0]!.age_rating = 'r18'
     await page.goto(privateReader)
+    await expect(page.getByRole('heading', { name: '年龄确认', exact: true })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+    expect((await new AxeBuilder({ page }).include('main').analyze()).violations).toEqual([])
+    await page.screenshot({ path: `test-results/private-age-confirmation-${viewport.width}-${colorScheme}.png`, fullPage: true })
+    await page.getByRole('button', { name: '我已年满18周岁，继续阅读' }).focus()
+    await page.keyboard.press('Enter')
     await expect(page.getByText('最后一段私有文章。')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
     expect((await new AxeBuilder({ page }).include('main').analyze()).violations).toEqual([])
@@ -167,5 +264,10 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 375, height: 812 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
     expect((await new AxeBuilder({ page }).include('main').analyze()).violations).toEqual([])
     await page.screenshot({ path: `test-results/private-editor-${viewport.width}-${colorScheme}.png`, fullPage: true })
+    await page.goto('/account#reading-preferences')
+    await expect(page.getByRole('switch', { name: '默认显示敏感内容（R-18）', exact: true })).not.toBeChecked()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+    expect((await new AxeBuilder({ page }).include('#reading-preferences').analyze()).violations).toEqual([])
+    await page.locator('#reading-preferences').screenshot({ path: `test-results/private-reading-preferences-${viewport.width}-${colorScheme}.png` })
   })
 }
