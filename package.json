@@ -25,6 +25,7 @@
     "accounts:deploy": "node --env-file-if-exists=.env scripts/accounts.ts deploy",
     "comments:deploy": "node --env-file-if-exists=.env scripts/accounts.ts comments",
     "content:deploy": "node --env-file-if-exists=.env scripts/accounts.ts content",
+    "editor:verify": "node --env-file-if-exists=.env scripts/verify-editor-backend.ts",
     "content:verify": "node --env-file-if-exists=.env scripts/verify-private-backend.ts",
     "accounts:bootstrap": "node --env-file-if-exists=.env scripts/accounts.ts bootstrap",
     "test": "pnpm test:content && pnpm test:private-build && pnpm test:e2e",
@@ -42,6 +43,7 @@
     "tailwindcss": "4.3.3",
     "vue": "3.5.44",
     "vue-router": "5.4.0",
+    "yaml": "2.9.1",
     "zod": "3.25.76"
   },
   "devDependencies": {

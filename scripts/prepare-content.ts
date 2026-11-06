@@ -9,6 +9,8 @@ import { readPublicForum, renderForumPost } from './lib/forum.ts'
 import { FORUM_PAGE_SIZE, forumPagePath, forumRoutes, forumFanfictionEntries, type ForumThreadRecord } from '../shared/forum.ts'
 import type { PublicDocument } from '../shared/content-schema.ts'
 import { fetchPrivateRoutes } from './lib/private-routes.ts'
+import { analyzeMarkdown } from './lib/markdown.ts'
+import { editorForumPages } from '../shared/editor.ts'
 
 const root = resolve(import.meta.dirname, '..')
 const privateRoutes = await fetchPrivateRoutes(process.env)
@@ -125,6 +127,17 @@ await writeFile(join(root, '.generated/references.json'), json(referenceCatalog)
 await writeFile(join(root, '.generated/routes.json'), json(routes))
 await writeFile(join(root, '.generated/events.json'), json(events))
 await writeFile(join(root, '.generated/forum.json'), json(forum))
+// Only public data feeds authoring suggestions; never include local/cloud drafts.
+await writeFile(join(root, '.generated/editor-catalogue.json'), json({
+  pages: [
+    ...staticRoutes.map(path => ({ path, title: path, kind: 'navigation', anchors: [] })),
+    ...documents.map(doc => ({ uid: doc.uid, title: doc.title, path: doc.path, kind: doc.entityType === 'story' ? 'story' : 'wiki', entityType: doc.entityType, anchors: [...analyzeMarkdown(doc.bodyMarkdown).anchors], markdownUrl: doc.markdownUrl })),
+    ...references.map(doc => ({ title: doc.title, path: doc.path, kind: 'reference', anchors: [...doc.analysis.anchors] })),
+    ...forum.flatMap(thread => editorForumPages(thread.routeKey, forumSources.find(t => t.metadata.uid === thread.uid)!.posts).map(page => ({ ...page, uid: thread.uid, title: thread.title, kind: 'forum', markdownUrl: thread.markdownUrl }))),
+  ],
+  sources: references.map(doc => ({ path: doc.sourcePath, title: doc.title, anchors: [...doc.analysis.explicitAnchors] })),
+  events: events.map(event => ({ uid: event.uid, title: event.title, path: event.path, articleUid: event.articleUid })),
+}))
 await publish('/data/v1/manifest.json', json({
   schemaVersion: 1, settingVersion: '3.0.3', siteRelease,
   scope: '六位皇族的完整人物条目、禁制机制、H31 全部事件与1747年选举相关百科、故事《第一次选择》，以及独立的世界内论坛；并非完整设定集。',

@@ -163,3 +163,7 @@ Tailwind 生成 CSS 和 Nuxt UI 合并类名是两件事。自定义 `text-card`
 投稿、筛选、预览、授权使用 Nuxt UI 的表单、选择器、复选框、卡片、提示、分页与弹窗。授权用户以 UUID 区分，昵称旁显示邮箱和 ID；搜索选项允许换行，手机不挤出视口。权限为客户端加载，但管理员判断和授权仍由 RLS 执行。静态空壳只保留通用标题、登录说明与无脚本提示。
 
 `tests/browser/private-content.spec.ts` 检查私有文章和编辑器在桌面／手机、浅色／深色下的 axe 与溢出，并覆盖登录、撤权、退出、正文 Markdown、楼层同人文、分页与授权表单。正文不进入静态搜索；构建隔离由独立 HTTP fixture 和产物扫描验证。
+
+## 网页编辑器
+
+`/editor` 复用 Nuxt UI 的 `Editor`／`EditorToolbar`、Tabs、表单、选择器、弹窗与提示组件，使用语义颜色和现有 panel、stack、card 间距。页面和工具栏允许换行，论坛只挂载当前楼层编辑器。可视编辑使用 Markdown 模型；表格、图片、锚点等未完整支持的语法保留源码，不通过富文本往返转换。阅读预览复用 `ReadingMarkdown`、`PrivateArticle`、`PrivateForum`，通过 `privateContent=false` 隐去私有锁和分级标签；私有页面默认行为不变。本机／云端状态在独立区域提示，链接与删除用带标签的 Nuxt UI 弹窗；无脚本时保留编辑器用途说明。

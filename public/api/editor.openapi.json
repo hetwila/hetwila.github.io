@@ -1,0 +1,346 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "网页编辑器云端草稿",
+    "version": "1.0.0",
+    "description": "Supabase 私有 editor-drafts bucket。仅当前 admin 用户可读写自己 UID 目录的 JSON 快照。每次创建新对象，禁止覆盖；角色以数据库为准。草稿不发布为文章，localStorage 不走 API。"
+  },
+  "servers": [
+    {
+      "url": "https://{project}.supabase.co/storage/v1",
+      "variables": {
+        "project": {
+          "default": "YOUR_PROJECT_REF"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": [],
+      "apiKey": []
+    }
+  ],
+  "paths": {
+    "/object/list/editor-drafts": {
+      "post": {
+        "summary": "列出当前管理员的快照",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "prefix"
+                ],
+                "properties": {
+                  "prefix": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "必须为当前 auth.uid()"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "default": 21
+                  },
+                  "offset": {
+                    "type": "integer",
+                    "default": 0
+                  },
+                  "sortBy": {
+                    "type": "object",
+                    "properties": {
+                      "column": {
+                        "const": "name"
+                      },
+                      "order": {
+                        "const": "desc"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "请求成功；仅本人可见的对象。"
+          },
+          "400": {
+            "description": "对象不存在、格式无效或访问被拒绝。"
+          },
+          "401": {
+            "description": "需要有效登录。"
+          },
+          "403": {
+            "description": "RLS 拒绝或不是管理员。"
+          }
+        }
+      }
+    },
+    "/object/editor-drafts/{owner}/{filename}": {
+      "parameters": [
+        {
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "当前 auth.uid()"
+        },
+        {
+          "name": "filename",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "13位时间戳-标题base64url片段-随机UUID.json"
+        }
+      ],
+      "post": {
+        "summary": "创建独立快照，最多4 MiB；编辑器限制2 MiB",
+        "parameters": [
+          {
+            "name": "x-upsert",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "false"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditorDraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "请求成功；仅本人可见的对象。"
+          },
+          "400": {
+            "description": "对象不存在、格式无效或访问被拒绝。"
+          },
+          "401": {
+            "description": "需要有效登录。"
+          },
+          "403": {
+            "description": "RLS 拒绝或不是管理员。"
+          }
+        }
+      }
+    },
+    "/object/authenticated/editor-drafts/{owner}/{filename}": {
+      "parameters": [
+        {
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "当前 auth.uid()"
+        },
+        {
+          "name": "filename",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "13位时间戳-标题base64url片段-随机UUID.json"
+        }
+      ],
+      "get": {
+        "summary": "认证下载本人草稿，不使用公开链接或签名 URL",
+        "responses": {
+          "200": {
+            "description": "JSON 快照",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditorDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "对象不存在、格式无效或访问被拒绝。"
+          },
+          "401": {
+            "description": "需要有效登录。"
+          },
+          "403": {
+            "description": "RLS 拒绝或不是管理员。"
+          }
+        }
+      }
+    },
+    "/object/editor-drafts": {
+      "delete": {
+        "summary": "删除本人选定的快照",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "prefixes"
+                ],
+                "properties": {
+                  "prefixes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "description": "owner/filename，所有路径均受 RLS 校验"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "请求成功；仅本人可见的对象。"
+          },
+          "400": {
+            "description": "对象不存在、格式无效或访问被拒绝。"
+          },
+          "401": {
+            "description": "需要有效登录。"
+          },
+          "403": {
+            "description": "RLS 拒绝或不是管理员。"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Supabase access token"
+      },
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "apikey",
+        "description": "公开 publishable key；不能放服务角色密钥。"
+      }
+    },
+    "schemas": {
+      "EditorDraft": {
+        "type": "object",
+        "required": [
+          "version",
+          "id",
+          "kind",
+          "updatedAt",
+          "metadata",
+          "body",
+          "posts"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "const": 1
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "enum": [
+              "wiki",
+              "story",
+              "forum"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "依类型包含完整内容元数据，允许编辑中的空值；恢复时检查结构，Markdown 导出时以内容 schema 校验。"
+          },
+          "body": {
+            "type": "string"
+          },
+          "posts": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "author",
+                "blocks"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "author": {
+                  "type": "string"
+                },
+                "blocks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "type",
+                      "key",
+                      "title",
+                      "body"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "type": {
+                        "enum": [
+                          "markdown",
+                          "fanfiction"
+                        ]
+                      },
+                      "key": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "body": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

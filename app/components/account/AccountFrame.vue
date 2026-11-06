@@ -15,6 +15,7 @@ useSeoMeta({ title: () => props.title, robots: 'noindex, nofollow' })
         <UButton to="/account" color="neutral" variant="outline">个人中心</UButton>
         <UButton v-if="account.isAdmin.value" to="/account/admin" color="neutral" variant="outline">管理中心</UButton>
         <UButton to="/private" color="neutral" variant="outline">可阅读内容</UButton>
+        <UButton to="/editor" color="neutral" variant="outline">文章编辑器</UButton>
         <UButton v-if="canSubmit || account.isAdmin.value" to="/account/submissions" color="neutral" variant="outline">{{ account.isAdmin.value ? '内容与投稿' : '我的投稿' }}</UButton>
         <UButton to="/" color="neutral" variant="link">返回网站</UButton>
       </nav>

@@ -7,6 +7,7 @@ import { commentRegistrySQL } from '../../scripts/lib/comment-registry.ts'
 import { readPublicContent } from '../../scripts/lib/content.ts'
 import { readFileSync, readdirSync } from 'node:fs'
 import { fetchPrivateRoutes } from '../../scripts/lib/private-routes.ts'
+import { editorStorageVerification } from '../../scripts/lib/editor-storage-verification.ts'
 
 const prefix = `hetwila-accounts-test-${process.pid}`
 const jwtSecret = 'local-account-integration-test-only-secret-000000000'
@@ -83,6 +84,12 @@ before(async()=>{
 after(()=>{
   for(const name of containers.reverse()) {try {docker('rm','-f',name)} catch { /* already removed */ }}
   try {docker('network','rm',prefix)} catch { /* setup may have failed */ }
+})
+
+test('editor Storage enforces admin ownership, immutable snapshots, role revocation and anonymous denial even with broad policies', () => {
+  const fixture = editorStorageVerification()
+  sql(fixture.query)
+  assert.equal(sql(`select count(*) from auth.users where id in (${fixture.ids.map(id => `'${id}'`).join(',')})`), '0')
 })
 
 test('successful registration consumes exactly one invitation and always starts as guest',async()=>{

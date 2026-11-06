@@ -170,6 +170,8 @@ jobs:
                       if anchor:
                           assert f'id="{anchor}"' in read(path).decode(), f'Missing event paragraph: {event["path"]}'
                   assert '世界内论坛' in read('/forum').decode()
+                  assert '文章与帖子编辑器' in read('/editor').decode()
+                  assert json.loads(read('/api/editor.openapi.json'))['openapi'] == '3.1.0'
                   for path in json.loads(read('/private-routes.json')):
                       assert path.startswith('/private/'), 'Invalid private route'
                       shell = read(path).decode()

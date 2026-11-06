@@ -9,7 +9,7 @@ import { renderReadingMarkdown } from '#shared/comment-markdown'
 import ForumFanfiction from '~/components/content/ForumFanfiction.vue'
 import ReadingMarkdown from './ReadingMarkdown.vue'
 import AgeRatingBadge from './AgeRatingBadge.vue'
-const props = defineProps<{ document: PrivateDocument; basePath: string; preview?: boolean }>()
+const props = withDefaults(defineProps<{ document: PrivateDocument; basePath: string; preview?: boolean; privateContent?: boolean }>(), { privateContent: true })
 const route = useRoute()
 const page = computed(() => props.preview ? 1 : Number(route.query.page || 1))
 const onlyAuthor = computed(() => !props.preview && route.query.author === '1')
@@ -20,8 +20,8 @@ const all = computed(() => props.document.forum_posts.map(post => {
 const filtered = computed(() => all.value.filter(post => !onlyAuthor.value || post.isOriginalPoster))
 const pages = computed(() => Math.max(1, Math.ceil(filtered.value.length / FORUM_PAGE_SIZE)))
 const validPage = computed(() => Number.isSafeInteger(page.value) && page.value >= 1 && page.value <= pages.value)
-const posts = computed(() => validPage.value ? filtered.value.slice((page.value - 1) * FORUM_PAGE_SIZE, page.value * FORUM_PAGE_SIZE) : [])
-const path = (p = 1, author = false, floor?: number) => privateForumPath(props.basePath, p, author, floor)
+const posts = computed(() => props.preview ? all.value : validPage.value ? filtered.value.slice((page.value - 1) * FORUM_PAGE_SIZE, page.value * FORUM_PAGE_SIZE) : [])
+const path = (p = 1, author = false, floor?: number) => props.preview ? (floor ? `#post-${floor}` : '') : privateForumPath(props.basePath, p, author, floor)
 const floorPath = (floor: number) => floor > 0 && floor <= all.value.length ? path(Math.ceil(floor / FORUM_PAGE_SIZE), false, floor) : undefined
 const fiction = computed(() => all.value.flatMap(post => post.blocks.flatMap(block => block.type === 'fanfiction' ? [{ title: block.title, floor: post.floor, anchor: forumFanfictionAnchor(post.floor, block.key), path: `${path(Math.ceil(post.floor / FORUM_PAGE_SIZE))}#${forumFanfictionAnchor(post.floor, block.key)}` }] : [])))
 function fictionProps(floor: number, key: string, body: string) {
@@ -37,7 +37,7 @@ async function jump() { const floor = Number(jumpFloor.value); if (Number.isInte
 <template>
   <div>
     <header class="forum-thread-heading rounded-card border border-default bg-raised p-panel">
-      <div class="mb-4 flex flex-wrap items-center gap-inline"><UBadge v-if="document.category" variant="soft">{{ document.category }}</UBadge><UBadge color="neutral" variant="subtle" icon="i-lucide-lock-keyhole">私有</UBadge><AgeRatingBadge :rating="document.age_rating" /><span v-if="document.status === 'draft'" class="text-caption text-muted">草稿</span></div>
+      <div class="mb-4 flex flex-wrap items-center gap-inline"><UBadge v-if="document.category" variant="soft">{{ document.category }}</UBadge><template v-if="privateContent"><UBadge color="neutral" variant="subtle" icon="i-lucide-lock-keyhole">私有</UBadge><AgeRatingBadge :rating="document.age_rating" /></template><span v-if="document.status === 'draft'" class="text-caption text-muted">草稿</span></div>
       <h1 class="font-semibold text-section leading-heading text-highlighted">{{ document.title }}</h1>
       <p v-if="document.description" class="mt-4 text-detail leading-copy text-muted">{{ document.description }}</p>
       <p class="mt-5 flex flex-wrap gap-inline text-caption text-muted"><span>{{ all[0]?.author }} 发起</span><span>{{ Math.max(0, all.length - 1) }} 条回复</span><span>{{ new Set(all.map(post => post.author)).size }} 位参与者</span></p>
