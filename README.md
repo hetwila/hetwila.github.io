@@ -144,7 +144,7 @@ Markdown原文与JSON正文来自同一个源文件；`worldTime.year: 0` 保持
 
 推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容／来源／链接测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、全部中文百科／故事／来源深链接、事件段落锚点、论坛全部分页／楼层及机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
 
-Pages 发布步骤最多等待20分钟，部署任务总时限为25分钟，为服务端排队、更新与线上校验留出时间。发布结果以部署和线上校验均成功为准。
+Pages 发布由 `scripts/deploy-pages.ts` 调用官方 REST API，使用当前工作流的唯一 `github-pages` 产物与 OIDC；先核对构建提交，再创建部署和轮询状态。官方 deploy-pages v5 将等待时间硬性限制为10分钟，本仓库为排队与文件同步保留20分钟，部署任务总时限为25分钟。临时状态请求失败会退避并遵守 Retry-After，超时或任务取消会取消未完成的部署；仅在服务报告成功后输出站点地址，随后执行线上校验。部署任务增加的 `actions: read` 仅用于读取本次构建的产物元数据，不需要长期部署密钥。
 
 工作流也执行账号权限与函数测试。启用账号页面需要 Actions 中的 `SUPABASE_URL`、`SUPABASE_KEY`、`NUXT_PUBLIC_TURNSTILE_SITE_KEY` 三个公开变量；不向静态构建传入服务 secret 或管理 PAT。Codex 环境设置不会自动同步到 Actions，详细配置见 [用户系统部署](docs/用户系统.md)。
 

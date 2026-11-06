@@ -107,12 +107,25 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
+      contents: read
+      actions: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Check out deployment script
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+
       - name: Use GitHub Actions as the Pages source
         env:
           GH_TOKEN: ${{ github.token }}
@@ -139,10 +152,9 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
-        with:
-          # Leave time for the Pages queue and CDN update before cancelling.
-          timeout: 1200000
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/deploy-pages.ts
 
       - name: Verify published pages and machine-readable content
         env:
