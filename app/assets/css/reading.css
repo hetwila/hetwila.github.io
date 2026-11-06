@@ -1,0 +1,23 @@
+.reading-experience { min-width: 0; }
+.reader-entry { position: sticky; top: var(--ui-header-height); z-index: 10; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--ds-space-inline); padding: calc(var(--spacing) * 2) 0; background: var(--ui-bg); }
+.reader-dialog { background: var(--ui-bg); }
+.reader-shell { --reader-font: var(--font-serif); height: 100dvh; min-height: 0; display: flex; flex-direction: column; background: var(--ui-bg); color: var(--ui-text); }
+.reader-shell[data-font="sans"] { --reader-font: var(--font-sans); }
+.reader-toolbar, .reader-footer { flex: none; display: flex; align-items: center; gap: calc(var(--spacing) * 2); padding: calc(var(--spacing) * 2) var(--ds-page-gutter); background: var(--ui-bg); }
+.reader-toolbar { border-bottom: var(--ds-border-width) solid var(--ui-border); padding-top: max(calc(var(--spacing) * 2), env(safe-area-inset-top)); }
+.reader-footer { border-top: var(--ds-border-width) solid var(--ui-border); padding-bottom: max(calc(var(--spacing) * 2), env(safe-area-inset-bottom)); }
+.reader-settings, .reader-contents { flex: none; padding: var(--ds-space-inline) var(--ds-page-gutter); max-height: 40dvh; overflow-y: auto; }
+.reader-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: auto; }
+.reader-book { max-width: var(--ds-reader-width); margin-inline: auto; padding: var(--ds-space-layout) var(--ds-page-gutter); }
+.reader-book-title { margin-bottom: var(--ds-space-layout); }
+.reader-book-title h1 { font-family: var(--reader-font); font-size: var(--ds-text-title); font-weight: var(--font-weight-semibold); line-height: var(--ds-leading-heading); overflow-wrap: anywhere; }
+.reader-prose { --ds-text-prose: calc(var(--ds-type-unit) * var(--reader-scale)); --ds-leading-prose: var(--reader-leading); font-family: var(--reader-font); font-size: var(--ds-text-prose); line-height: var(--reader-leading); padding: 0; overflow-wrap: anywhere; }
+.reader-prose :is(.article-prose, .fanfiction-prose, .story-prose) { font-family: inherit; font-size: inherit; line-height: inherit; max-width: none; padding: 0; margin: 0; }
+.reader-prose :is(p, li, blockquote) { font-size: inherit; line-height: inherit; }
+.reader-prose p { margin-block: var(--ds-reader-paragraph-gap); }
+.reader-prose :is(h2,h3,h4,h5,h6) { font-family: inherit; font-size: 1.25em; line-height: var(--ds-leading-heading); color: var(--ui-text-highlighted); font-weight: var(--font-weight-semibold); margin-block: 1.8em 0.8em; }
+.reader-prose :is(h2,h3,h4,h5,h6) a { color: inherit; text-decoration: none; }
+.reader-prose :is(img,video) { max-width: 100%; height: auto; }
+.reader-prose pre { max-width: 100%; overflow-x: auto; }
+.reader-prose [id] { scroll-margin-top: 0; }
+.reader-ending { margin-top: var(--ds-space-layout); padding-block: var(--ds-space-stack); text-align: center; }

@@ -1,12 +1,21 @@
 <script setup lang="ts">
-import type { ForumFanfictionEntry } from '#shared/forum'
+import { FORUM_PAGE_SIZE, type ForumFanfictionEntry } from '#shared/forum'
+import type { ReadingItem } from '#shared/reading'
+import { fictionReadingContext } from '~/utils/reading-context'
+import ImmersiveReader from '~/components/reading/ImmersiveReader.vue'
 
-defineProps<ForumFanfictionEntry & {
+const props = defineProps<ForumFanfictionEntry & {
   characterCount: number
   sections: { title: string, anchor: string, depth: number }[]
   previous?: ForumFanfictionEntry
   next?: ForumFanfictionEntry
 }>()
+const context = inject(fictionReadingContext, undefined)
+const readerItem = computed<ReadingItem | undefined>(() => {
+  const current = context?.value
+  if (!current?.enabled) return
+  return { id: `${current.uid}/${props.anchor}`, kind: 'fanfiction', title: props.title, path: current.documentId ? `/private/read?id=${current.documentId}&page=${Math.ceil(props.floor / FORUM_PAGE_SIZE)}#${props.anchor}` : props.path, anchor: props.anchor, floor: props.floor, ...(current.ownerId ? { ownerId: current.ownerId, documentId: current.documentId } : {}) }
+})
 </script>
 
 <template>
@@ -24,7 +33,7 @@ defineProps<ForumFanfictionEntry & {
         </nav>
       </details>
     </header>
-    <div class="fanfiction-prose"><slot /></div>
+    <ImmersiveReader :key="readerItem?.id" :item="readerItem"><div class="fanfiction-prose"><slot /></div></ImmersiveReader>
     <footer :id="`${anchor}-end`" class="fanfiction-footer" tabindex="-1" :aria-label="`${title}正文结束`" data-pagefind-ignore>
       <div class="flex flex-wrap items-center justify-between gap-inline">
         <span class="text-caption text-muted">本篇正文结束 · 继续楼层讨论</span>

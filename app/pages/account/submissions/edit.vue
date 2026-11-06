@@ -136,7 +136,7 @@ onBeforeUnmount(() => { request++; reset(); finishDiscard(false); window.removeE
           <UFormField v-if="account.isAdmin.value" label="发布状态" name="status" description="草稿仅供管理与编辑；发布后按本篇阅读权限开放。"><USelect v-model="form.status" :items="[{ label: '草稿', value: 'draft' }, { label: '已发布', value: 'published' }]" :disabled="saving" /></UFormField>
           <div class="flex flex-wrap items-center gap-inline"><UButton type="submit" :loading="saving">保存投稿</UButton><UButton type="button" color="neutral" variant="outline" :aria-expanded="preview" @click="preview = !preview">{{ preview ? '收起预览' : '预览排版' }}</UButton><span v-if="dirty" class="text-caption text-muted">有未保存的修改</span></div>
         </UForm>
-        <section v-if="preview" aria-label="投稿预览" class="border-t border-default pt-stack"><PrivateForum v-if="form.kind === 'forum'" :document="previewDocument" base-path="/private/read" preview /><PrivateArticle v-else :document="previewDocument" /></section>
+        <section v-if="preview" aria-label="投稿预览" class="border-t border-default pt-stack"><PrivateForum v-if="form.kind === 'forum'" :document="previewDocument" base-path="/private/read" preview /><PrivateArticle v-else :document="previewDocument" :reader-enabled="false" /></section>
         <PrivateAccess v-if="original && account.isAdmin.value" :document-id="original.id" @saved="accessSaved" />
         <div v-if="original" class="space-y-3 border-t border-default pt-stack"><p class="text-caption leading-copy text-muted">已保存的内容可立即通过“阅读”打开；独立地址会在下次网站部署时生成。</p><p class="break-all text-caption text-muted">独立地址：{{ privateContentPath(original.id) }}</p><UButton color="error" variant="outline" :disabled="saving" @click="deleting = true">删除投稿</UButton></div>
       </template>

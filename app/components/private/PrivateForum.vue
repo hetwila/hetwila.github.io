@@ -9,8 +9,11 @@ import { renderReadingMarkdown } from '#shared/comment-markdown'
 import ForumFanfiction from '~/components/content/ForumFanfiction.vue'
 import ReadingMarkdown from './ReadingMarkdown.vue'
 import AgeRatingBadge from './AgeRatingBadge.vue'
+import { fictionReadingContext } from '~/utils/reading-context'
 const props = withDefaults(defineProps<{ document: PrivateDocument; basePath: string; preview?: boolean; privateContent?: boolean }>(), { privateContent: true })
 const route = useRoute()
+const account = useAccount()
+provide(fictionReadingContext, computed(() => ({ uid: `private:${props.document.id}`, documentId: props.document.id, ownerId: account.user.value?.id, enabled: Boolean(!props.preview && props.privateContent && account.user.value) })))
 const page = computed(() => props.preview ? 1 : Number(route.query.page || 1))
 const onlyAuthor = computed(() => !props.preview && route.query.author === '1')
 const all = computed(() => props.document.forum_posts.map(post => {

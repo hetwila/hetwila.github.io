@@ -3,7 +3,10 @@ import type { PrivateDocument } from '#shared/private-content'
 import { renderReadingMarkdown } from '#shared/comment-markdown'
 import ReadingMarkdown from './ReadingMarkdown.vue'
 import AgeRatingBadge from './AgeRatingBadge.vue'
-const props = withDefaults(defineProps<{ document: PrivateDocument; privateContent?: boolean }>(), { privateContent: true })
+import ImmersiveReader from '~/components/reading/ImmersiveReader.vue'
+const props = withDefaults(defineProps<{ document: PrivateDocument; privateContent?: boolean; readerEnabled?: boolean }>(), { privateContent: true, readerEnabled: true })
+const account = useAccount()
+const readerItem = computed(() => props.readerEnabled && props.privateContent && props.document.kind === 'story' && account.user.value ? { id: `private:${props.document.id}/story`, kind: 'story' as const, title: props.document.title, path: `/private/read?id=${props.document.id}`, documentId: props.document.id, ownerId: account.user.value.id } : undefined)
 const options = computed(() => ({ prefix: `document-${props.document.id}` }))
 const toc = computed(() => renderReadingMarkdown(props.document.body_markdown, options.value).headings)
 </script>
@@ -18,7 +21,7 @@ const toc = computed(() => renderReadingMarkdown(props.document.body_markdown, o
         <p v-if="document.author_name" class="text-caption text-muted">{{ document.author_name }}</p>
       </header>
       <UContentToc v-if="toc.length" :links="toc" title="本页内容" class="mobile-toc lg:hidden" />
-      <ReadingMarkdown :source="document.body_markdown" :options="options" class="article-prose" :class="{ 'story-prose': document.kind === 'story' }" />
+      <ImmersiveReader :key="readerItem?.id" :item="readerItem"><ReadingMarkdown :source="document.body_markdown" :options="options" class="article-prose" :class="{ 'story-prose': document.kind === 'story' }" /></ImmersiveReader>
     </article>
     <template #right><UContentToc v-if="toc.length" :links="toc" title="本页内容" highlight /></template>
   </UPage>

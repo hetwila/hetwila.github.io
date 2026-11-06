@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import catalog from '../../.generated/catalog.json'
+import RecentReading from '~/components/reading/RecentReading.vue'
 useSeoMeta({
   title: '开始阅读',
   description: '从一个概念，走进赫特维拉。阅读世界原理、历史变革，以及这些背景中的故事。',
@@ -34,6 +35,8 @@ const entries = ['wiki:ban', 'wiki:诺菲莉亚'].map(uid => catalog.find(entry 
       <NuxtLink to="/wiki/禁制"><span class="step-no">01</span><span>理解一个概念<small>禁制如何运作</small></span><UIcon name="i-lucide-arrow-right" /></NuxtLink>
       <NuxtLink to="/wiki/诺菲莉亚·薇尔希·伊拉奈德"><span class="step-no">02</span><span>认识一位人物<small>诺菲莉亚的性格与生活</small></span><UIcon name="i-lucide-arrow-right" /></NuxtLink>
     </section>
+
+    <RecentReading />
 
     <section id="entries" class="pt-section" aria-labelledby="entries-title">
       <div class="mb-stack flex items-end justify-between gap-4">

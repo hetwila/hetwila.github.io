@@ -75,6 +75,8 @@
   --ds-comment-text: var(--ds-text-copy);
   --ds-comment-code-height: calc(var(--spacing) * 64);
   --ds-comment-image-height: calc(var(--spacing) * 48);
+  --ds-reader-width: var(--ds-reading-width);
+  --ds-reader-paragraph-gap: 1.2em;
 
   /* Use the same Tailwind breakpoints as Vue utility classes. */
   @variant max-xl {

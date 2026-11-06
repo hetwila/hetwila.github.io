@@ -3,6 +3,7 @@ import catalog from '../../../.generated/catalog.json'
 import graph from '../../../.generated/relations.json'
 import events from '../../../.generated/events.json'
 import ArticleComments from '~/components/comments/ArticleComments.vue'
+import ImmersiveReader from '~/components/reading/ImmersiveReader.vue'
 
 const route = useRoute()
 const entry = computed(() => catalog.find(item => item.entityType === 'story' && item.routeKey === route.params.slug))
@@ -30,7 +31,7 @@ useHead(() => ({ link: [{ rel: 'canonical', href: `https://hetwila.github.io${en
           <div class="flex flex-wrap items-center gap-inline text-caption" data-pagefind-ignore><span class="text-muted">故事中的事件</span><UButton v-for="event in depicted" :key="event.uid" :to="event.path" variant="outline" icon="i-lucide-history">{{ event.title }}</UButton></div>
         </header>
         <UContentToc :links="toc" title="故事目录" class="mobile-toc lg:hidden" data-pagefind-ignore />
-        <ContentRenderer :value="story" class="article-prose story-prose" />
+        <ImmersiveReader :key="entry.uid" :item="{ id: entry.uid, kind: 'story', title: story.title, path: entry.path }"><ContentRenderer :value="story" class="article-prose story-prose" /></ImmersiveReader>
         <section id="related-wiki" class="mt-section" aria-labelledby="related-wiki-heading" data-pagefind-ignore>
           <p class="eyebrow mb-2">BEYOND THE STORY</p><h2 id="related-wiki-heading" class="section-title mb-stack">相关百科</h2>
           <div class="grid gap-grid sm:grid-cols-2">

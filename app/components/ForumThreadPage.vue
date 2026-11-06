@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import forum from '../../.generated/forum.json'
 import { FORUM_PAGE_SIZE, forumPagePath, forumPostPath } from '#shared/forum'
+import { fictionReadingContext } from '~/utils/reading-context'
 
 const props = defineProps<{ onlyAuthor?: boolean }>()
 const route = useRoute()
@@ -11,6 +12,7 @@ if (!thread || !/^[1-9]\d*$/.test(String(route.params.page)) || !Number.isSafeIn
   throw createError({ statusCode: 404, statusMessage: 'Not Found', message: '未找到论坛主题或页码' })
 }
 const currentPath = forumPagePath(thread.routeKey, page, props.onlyAuthor)
+provide(fictionReadingContext, computed(() => ({ uid: thread.uid, enabled: true })))
 const { data: posts } = await useAsyncData(`forum-${thread.uid}-${Boolean(props.onlyAuthor)}-${page}`, () => {
   const query = queryCollection('forumPosts').where('threadUid', '=', thread.uid)
   if (props.onlyAuthor) query.where('isOriginalPoster', '=', true)

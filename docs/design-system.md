@@ -154,6 +154,14 @@ Tailwind 生成 CSS 和 Nuxt UI 合并类名是两件事。自定义 `text-card`
 
 `tests/browser/forum-fanfiction.spec.ts` 覆盖附件全文、聊天混排、无 JS 目录／导航、键盘及深链接、搜索、独立导出、无后端请求、桌面／手机与明暗主题可访问性；内容测试另核对原附件哈希、边界错误、跨页导航与未发表内容排除。
 
+## 沉浸阅读
+
+`ImmersiveReader` 使用 Nuxt UI 全屏 `UModal`，正文通过 Teleport 在原位和阅读器之间移动，不创建重复锚点。阅读器由固定工具栏、可折叠设置／章节区、独立滚动正文和进度页脚组成；保留 Modal 的焦点约束与 Escape 行为，关闭后把焦点返回入口且不重置段落。浏览器 Fullscreen API 为可选增强。入口在正文阅读范围内保持可见；无 JavaScript 时不输出无效控件，原正文完整可读。
+
+`reading.css` 使用现有语义表面、边框、字体和间距。`--ds-reader-width` 继承阅读宽度，`--ds-reader-paragraph-gap` 为长文段距，两个变量由 CSS 直接消费。`--reader-scale` 从字号偏好与 `--ds-type-unit` 组合，`--reader-leading` 设置行距，`data-font` 在既有 serif／sans 字体之间切换，限定于阅读器。系统／浅色／深色选择使用 `UColorModeSelect` 和全站同一个持久化状态，不另设色板或主题键。手机和安全区域使用相同 token、动态视口与可滚动设置区。
+
+首页 `RecentReading` 使用语义卡片、`UBadge`、`UProgress` 和带名称的删除按钮。记录与正文控件不进入 Pagefind；首次访问显示空状态，不填充示例记录。私有作品显示通用名称，正文仍由原权限与年龄确认控制。数据和恢复规则见[沉浸阅读](沉浸阅读.md)，浏览器测试见 `tests/browser/reading.spec.ts`。
+
 ## 私有内容与投稿
 
 私有阅读页复用 `article-header`、`article-prose`、`max-w-reading`、`UPage` 与 `UContentToc`；论坛复用 `forum-post`、昵称栏、楼号、分页以及同一个 `ForumFanfiction`。私有标记使用现有锁图标与中性色 badge；共用 `AgeRatingBadge` 为“一般”使用 neutral、为“R-18”使用 warning，文字及可访问标签同时说明分级。年龄确认使用居中的 `UPageCard` 与明确的确认／返回按钮；个人偏好使用 `USwitch` 和独立保存按钮。不另造主题、色板或排版尺度。正文和普通文章尽量一致。
