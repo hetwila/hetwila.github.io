@@ -105,7 +105,7 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     permissions:
       pages: write
       id-token: write
@@ -140,6 +140,9 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+        with:
+          # Leave time for the Pages queue and CDN update before cancelling.
+          timeout: 1200000
 
       - name: Verify published pages and machine-readable content
         env:

@@ -144,6 +144,8 @@ Markdown原文与JSON正文来自同一个源文件；`worldTime.year: 0` 保持
 
 推送到 `main` 后，[`.github/workflows/pages.yml`](.github/workflows/pages.yml) 自动安装锁定依赖，执行类型检查、内容／来源／链接测试、静态生成和浏览器测试，再发布 `.output/public`。也可以在 Actions 中手动运行该工作流。发布后会检查线上首页、全部中文百科／故事／来源深链接、事件段落锚点、论坛全部分页／楼层及机器数据的版本、SHA-256，等待 CDN 更新；检查失败时工作流会明确报错。
 
+Pages 发布步骤最多等待20分钟，部署任务总时限为25分钟，为服务端排队、更新与线上校验留出时间。发布结果以部署和线上校验均成功为准。
+
 工作流也执行账号权限与函数测试。启用账号页面需要 Actions 中的 `SUPABASE_URL`、`SUPABASE_KEY`、`NUXT_PUBLIC_TURNSTILE_SITE_KEY` 三个公开变量；不向静态构建传入服务 secret 或管理 PAT。Codex 环境设置不会自动同步到 Actions，详细配置见 [用户系统部署](docs/用户系统.md)。
 
 当前仓库的 Pages 来源已由管理员设置为 **GitHub Actions**（**Settings → Pages → Build and deployment → Source**）。工作流核对该设置，并通过 GitHub 自带的 `GITHUB_TOKEN` 与 OIDC 发布，不需要额外配置部署密钥。构建任务只读仓库，部署任务单独获得 Pages 写入权限；Actions 版本固定到提交 SHA。若在新仓库复用本工作流，需先启用 Pages 并选择 GitHub Actions 来源；自动切换被 GitHub 拒绝时会明确报告权限警告。
